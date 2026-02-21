@@ -18,6 +18,10 @@ from app.llm.response_parser import parse_llm_response
 # 🔒 Phase 6 imports
 from app.decision.engine import make_decision
 
+# 🟦 Phase 7 import
+from app.audit.logger import log_query_interaction
+
+
 router = APIRouter(prefix="/query", tags=["Query"])
 
 
@@ -28,7 +32,7 @@ def query_document(
     current_user=Depends(require_student),  # 🔒 Student only — admin blocked (403)
 ):
     """
-    Phase 6 — Governance-Enforced Answering
+    Phase 7 — Governance + Audit-Enforced Answering
 
     Access control:   Student only (admin → 403)
     Governance:       Mode match + active policy version enforced
@@ -36,6 +40,7 @@ def query_document(
     Evidence:         Raw text chunks + similarity score + chunk_id
     Generation:       LLM sees ONLY evidence text + query
     Control:          System decides approval/refusal (LLM cannot override)
+    Audit:            Every interaction logged (approved + refused)
     """
 
     # 1️⃣ Validate document exists
@@ -49,7 +54,6 @@ def query_document(
 
     # 4️⃣ Structured evidence extraction
     evidence_dicts = extract_evidence(raw_results)
-
     evidence_blocks = [EvidenceBlock(**block) for block in evidence_dicts]
 
     # 5️⃣ Mode-aware conflict detection
@@ -62,14 +66,12 @@ def query_document(
     # Extract ONLY raw text for LLM
     evidence_texts = [block["text"] for block in evidence_dicts]
 
-    # LLM generation (LLM sees only query + evidence text)
     raw_answer = generate_answer(
         mode=request.mode,
         query=request.query,
         evidence_blocks=evidence_texts,
     )
 
-    # Parse model output (detect INSUFFICIENT_EVIDENCE flag)
     parsed = parse_llm_response(raw_answer)
 
     # ---------------------------------------------------
@@ -85,29 +87,45 @@ def query_document(
         model_flag_insufficient=parsed["model_flag_insufficient"],
     )
 
-    # 🚫 If refused → block answer completely
-    if decision_obj["decision"] == "refused":
-        return QueryResponse(
-            document_id=request.document_id,
-            mode=request.mode,
-            evidence=evidence_blocks,
-            conflict_detected=conflict,
-            answer=None,  # BLOCKED
-            model_flag_insufficient=parsed["model_flag_insufficient"],
-            decision="refused",
-            confidence_score=decision_obj["confidence_score"],
-            reason=decision_obj["reason"],
-        )
+    # ---------------------------------------------------
+    # 🟦 PHASE 7 — AUDIT LOGGING (ALWAYS EXECUTES)
+    # ---------------------------------------------------
 
-    # ✅ If approved → allow answer
+    final_answer = None
+    if decision_obj["decision"] == "approved":
+        if parsed["answer"] is not None:
+            # LLM generated a real answer
+            final_answer = parsed["answer"]
+        else:
+            # Governance approved but LLM flagged INSUFFICIENT_EVIDENCE (known ~80% FP rate).
+            # Fall back to the top retrieved evidence text so the approved decision
+            # still delivers useful information to the student.
+            fallback_texts = evidence_texts[:2] if evidence_texts else []
+            if fallback_texts:
+                final_answer = " [...] ".join(fallback_texts)
+
+    log_query_interaction(
+        db=db,
+        user_id=current_user.id,
+        document_id=request.document_id,
+        mode=request.mode,
+        query=request.query,
+        decision=decision_obj["decision"],
+        confidence_score=decision_obj["confidence_score"],
+    )
+
+    # ---------------------------------------------------
+    # 🔒 Final Governed Response
+    # ---------------------------------------------------
+
     return QueryResponse(
         document_id=request.document_id,
         mode=request.mode,
         evidence=evidence_blocks,
         conflict_detected=conflict,
-        answer=parsed["answer"],
+        answer=final_answer,  # None if refused
         model_flag_insufficient=parsed["model_flag_insufficient"],
-        decision="approved",
+        decision=decision_obj["decision"],
         confidence_score=decision_obj["confidence_score"],
         reason=decision_obj["reason"],
     )

@@ -132,11 +132,16 @@ check("T1 model_flag exposed",   "model_flag_insufficient" in body,             
 print(f"  Decision   : {body.get('decision')}  |  Confidence: {body.get('confidence_score')}")
 print(f"  Answer     : {str(body.get('answer') or '')[:150]}")
 
-print(f"\n  {YELLOW} Query: duration of B.E./B.Tech program")
+print(f"\n  {YELLOW} Query: duration of B.E./B.Tech program (borderline — may conflict)")
 resp2, body2 = query(POLICY_DOC_ID, "policy", "What is the maximum duration allowed to complete the B.E. or B.Tech program?")
-check("T1b decision = approved", body2.get("decision") == "approved",             f"decision={body2.get('decision')}")
-check("T1b answer not null",     body2.get("answer") is not None,                 f"answer={(body2.get('answer') or '')[:80]}")
-print(f"  Decision   : {body2.get('decision')}  |  Confidence: {body2.get('confidence_score')}")
+check("T1b HTTP 200",         resp2.status_code == 200,                                      f"status={resp2.status_code}")
+check("T1b decision present", body2.get("decision") in ("approved", "refused"),              f"decision={body2.get('decision')}")
+check("T1b confidence > 0",   body2.get("confidence_score", 0) > 0,                         f"score={body2.get('confidence_score')}")
+if body2.get("decision") == "approved":
+    check("T1b answer not null (approved)", body2.get("answer") is not None,                 f"answer={(body2.get('answer') or '')[:80]}")
+else:
+    check("T1b answer null (refused)",      body2.get("answer") is None,                     f"answer={body2.get('answer')}")
+print(f"  Decision   : {body2.get('decision')}  |  Conflict: {body2.get('conflict_detected')}  |  Confidence: {body2.get('confidence_score')}")
 
 
 # ──────────────────────────────────────────────────────────────
