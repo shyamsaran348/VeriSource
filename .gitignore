@@ -1,0 +1,53 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.Python
+*.egg
+*.egg-info/
+dist/
+build/
+*.so
+.eggs/
+
+# Virtual environments
+.venv/
+venv/
+env/
+.env.local
+
+# Environment & secrets — NEVER commit these
+.env
+*.key
+*.pem
+*.cert
+
+# Uploaded files (user PDFs — can be large)
+verisource-ai/backend/uploaded_files/
+
+# Vector store (ChromaDB data — regenerable from ingestion)
+verisource-ai/backend/vector_store/
+
+# fastembed model cache
+.cache/
+*.onnx
+*.cache
+
+# Test artifacts
+verisource-ai/backend/test_phase*.py
+verisource-ai/backend/vector_store_test/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+
+# Logs
+*.log
+
+# Coverage
+.coverage
+htmlcov/
