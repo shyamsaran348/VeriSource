@@ -1,8 +1,8 @@
 from typing import List
 
 
-POLICY_VARIANCE_THRESHOLD = 0.50  # Calibrated for fastembed (MiniLM ONNX) natural score spread
-RESEARCH_VARIANCE_THRESHOLD = 0.60
+POLICY_VARIANCE_THRESHOLD = 0.65  # Calibrated for fastembed (MiniLM ONNX) natural score spread
+RESEARCH_VARIANCE_THRESHOLD = 0.75
 
 
 def detect_conflict(evidence_blocks: List[dict], mode: str) -> bool:

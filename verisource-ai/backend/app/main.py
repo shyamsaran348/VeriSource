@@ -11,6 +11,7 @@ os.environ.setdefault("VECLIB_MAXIMUM_THREADS", "1")
 os.environ.setdefault("NUMEXPR_NUM_THREADS", "1")
 
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 
 from app.core.config import settings
 from app.core.logging import get_logger
@@ -24,6 +25,7 @@ from app.db.session import engine
 
 from app.auth.router import router as auth_router
 from app.ingestion.router import router as ingestion_router
+from app.documents.router import router as documents_router
 from app.query.router import router as query_router
 from app.audit.router import router as audit_router
 
@@ -50,8 +52,18 @@ app = FastAPI(
     version=settings.VERSION,
 )
 
+# Configure CORS
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=False,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 app.include_router(auth_router)
 app.include_router(ingestion_router)
+app.include_router(documents_router)
 app.include_router(query_router)
 app.include_router(audit_router)
 

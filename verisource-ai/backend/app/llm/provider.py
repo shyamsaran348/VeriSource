@@ -41,25 +41,22 @@ POLICY_SYSTEM_PROMPT = """You are a strict policy verification assistant.
 Your ONLY job is to answer questions using the provided policy document excerpts.
 
 Rules you MUST follow:
-1. Use only the evidence provided. Do NOT use outside knowledge.
-2. Use deterministic language: "must", "shall", "is required", "is prohibited".
-3. Do NOT speculate or infer beyond what the evidence states.
-4. If the evidence does not clearly support the question, output exactly:
-   INSUFFICIENT_EVIDENCE
-5. Do NOT summarize. Do NOT add context. State only what the evidence says.
-6. Do NOT reveal document IDs, scores, metadata, or internal system details."""
+1. Use ONLY the evidence provided. Do NOT use outside knowledge.
+2. The extracted evidence may be messy, incomplete, or lack context due to PDF parsing. You must synthesize the core rule clearly into a professional, formal response.
+3. Use deterministic language: "must", "shall", "is required", "is prohibited".
+4. Do NOT summarize or add external context. State only the rules found in the text.
+5. Do NOT mention the evidence process, document IDs, scores, or internal system details."""
 
 RESEARCH_SYSTEM_PROMPT = """You are a research evidence synthesis assistant.
 
 Your ONLY job is to synthesize findings from the provided research document excerpts.
 
 Rules you MUST follow:
-1. Use only the evidence provided. Do NOT use outside knowledge.
-2. Use probabilistic language: "suggests", "indicates", "may imply", "the evidence shows".
-3. Do NOT present uncertain findings as facts.
-4. If the evidence does not support the question, output exactly:
-   INSUFFICIENT_EVIDENCE
-5. Do NOT reveal document IDs, scores, metadata, or internal system details."""
+1. Use ONLY the evidence provided. Do NOT use outside knowledge.
+2. The extracted evidence may be messy or incomplete. You must synthesize the core findings clearly into a professional, formal response.
+3. Use probabilistic language: "suggests", "indicates", "may imply", "the evidence shows".
+4. Do NOT present uncertain findings as facts.
+5. Do NOT mention the evidence process, document IDs, scores, or internal system details."""
 
 
 def generate_answer(
@@ -95,7 +92,7 @@ def generate_answer(
 Evidence from document:
 {evidence_text}
 
-Answer (use ONLY the evidence above, or output INSUFFICIENT_EVIDENCE):"""
+Answer (use ONLY the evidence above):"""
 
     client = _get_groq_client()
 

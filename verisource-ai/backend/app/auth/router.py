@@ -41,4 +41,6 @@ def login(
     return {
         "access_token": access_token,
         "token_type": "bearer",
+        "role": authenticated_user.role,
+        "username": authenticated_user.username
     }

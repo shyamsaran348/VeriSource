@@ -20,20 +20,8 @@ def parse_llm_response(raw_output: str) -> dict:
             "model_flag_insufficient": bool
         }
 
-    If the model output contains INSUFFICIENT_EVIDENCE (case-insensitive):
-        answer = None
-        model_flag_insufficient = True
-    Else:
-        answer = cleaned output text
-        model_flag_insufficient = False
     """
     if not raw_output or not raw_output.strip():
-        return {
-            "answer": None,
-            "model_flag_insufficient": True,
-        }
-
-    if INSUFFICIENT_SENTINEL in raw_output.upper():
         return {
             "answer": None,
             "model_flag_insufficient": True,
