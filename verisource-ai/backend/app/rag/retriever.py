@@ -2,7 +2,7 @@ from fastapi import HTTPException
 from app.rag.embeddings import embed_query
 from app.rag.vector_store import get_existing_collection
 
-TOP_K = 5
+TOP_K = 8
 
 
 def retrieve(document_id: str, query: str) -> dict:

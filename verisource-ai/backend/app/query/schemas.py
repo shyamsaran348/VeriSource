@@ -18,13 +18,21 @@ class QueryRequest(BaseModel):
 class EvidenceBlock(BaseModel):
     chunk_id: str
     text: str
-    score: float
+    similarity: float  # 🔹 renamed from score → similarity (Phase 6 requirement)
 
 
 class QueryResponse(BaseModel):
     document_id: UUID4
     mode: str
+
     evidence: List[EvidenceBlock]
     conflict_detected: bool
+
+    # Phase 5 fields
     answer: Optional[str] = None
     model_flag_insufficient: bool = False
+
+    # 🔒 Phase 6 fields
+    decision: Literal["approved", "refused"]
+    confidence_score: float
+    reason: str

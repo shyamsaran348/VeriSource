@@ -15,6 +15,9 @@ from app.rag.conflict import detect_conflict
 from app.llm.provider import generate_answer
 from app.llm.response_parser import parse_llm_response
 
+# 🔒 Phase 6 imports
+from app.decision.engine import make_decision
+
 router = APIRouter(prefix="/query", tags=["Query"])
 
 
@@ -25,14 +28,14 @@ def query_document(
     current_user=Depends(require_student),  # 🔒 Student only — admin blocked (403)
 ):
     """
-    Phase 5 — Controlled Generation Layer
+    Phase 6 — Governance-Enforced Answering
 
     Access control:   Student only (admin → 403)
     Governance:       Mode match + active policy version enforced
     Isolation:        Single document scope — never touches other collections
     Evidence:         Raw text chunks + similarity score + chunk_id
     Generation:       LLM sees ONLY evidence text + query
-    Control:          LLM cannot decide refusal
+    Control:          System decides approval/refusal (LLM cannot override)
     """
 
     # 1️⃣ Validate document exists
@@ -53,7 +56,7 @@ def query_document(
     conflict = detect_conflict(evidence_dicts, request.mode)
 
     # ---------------------------------------------------
-    # 🔒 PHASE 5 — CONTROLLED GENERATION STARTS HERE
+    # 🔒 Controlled LLM Generation
     # ---------------------------------------------------
 
     # Extract ONLY raw text for LLM
@@ -70,11 +73,33 @@ def query_document(
     parsed = parse_llm_response(raw_answer)
 
     # ---------------------------------------------------
-    # ⚠️ IMPORTANT:
-    # We DO NOT block answer here.
-    # Refusal logic comes in Phase 6.
+    # 🔒 PHASE 6 — SYSTEM-LEVEL GOVERNANCE DECISION
     # ---------------------------------------------------
 
+    similarities = [block.similarity for block in evidence_blocks]
+
+    decision_obj = make_decision(
+        mode=request.mode,
+        similarities=similarities,
+        conflict_flag=conflict,
+        model_flag_insufficient=parsed["model_flag_insufficient"],
+    )
+
+    # 🚫 If refused → block answer completely
+    if decision_obj["decision"] == "refused":
+        return QueryResponse(
+            document_id=request.document_id,
+            mode=request.mode,
+            evidence=evidence_blocks,
+            conflict_detected=conflict,
+            answer=None,  # BLOCKED
+            model_flag_insufficient=parsed["model_flag_insufficient"],
+            decision="refused",
+            confidence_score=decision_obj["confidence_score"],
+            reason=decision_obj["reason"],
+        )
+
+    # ✅ If approved → allow answer
     return QueryResponse(
         document_id=request.document_id,
         mode=request.mode,
@@ -82,4 +107,7 @@ def query_document(
         conflict_detected=conflict,
         answer=parsed["answer"],
         model_flag_insufficient=parsed["model_flag_insufficient"],
+        decision="approved",
+        confidence_score=decision_obj["confidence_score"],
+        reason=decision_obj["reason"],
     )

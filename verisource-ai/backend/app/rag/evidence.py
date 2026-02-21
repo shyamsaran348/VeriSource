@@ -48,7 +48,7 @@ def extract_evidence(results: dict) -> List[Dict]:
         evidence_blocks.append({
             "chunk_id": meta["chunk_id"],
             "text": doc_text,
-            "score": round(similarity_score, 4)
+            "similarity": round(similarity_score, 4)
         })
 
     return evidence_blocks
