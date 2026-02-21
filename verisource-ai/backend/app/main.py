@@ -17,6 +17,7 @@ from app.core.logging import get_logger
 
 from app.users.models import User          # noqa: F401
 from app.documents.models import Document  # noqa: F401
+from app.audit.models import AuditLog  # noqa: F401
 
 from app.db.base import Base
 from app.db.session import engine
@@ -24,6 +25,7 @@ from app.db.session import engine
 from app.auth.router import router as auth_router
 from app.ingestion.router import router as ingestion_router
 from app.query.router import router as query_router
+from app.audit.router import router as audit_router
 
 logger = get_logger()
 
@@ -50,8 +52,8 @@ app = FastAPI(
 
 app.include_router(auth_router)
 app.include_router(ingestion_router)
-
 app.include_router(query_router)
+app.include_router(audit_router)
 
 
 def _startup_warmup():
