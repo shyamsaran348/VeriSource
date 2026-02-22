@@ -2,7 +2,6 @@ import api from './api';
 
 export const auditService = {
     getLogs: async (filters = {}) => {
-        // Convert objective filters object to query params
         const params = new URLSearchParams();
         if (filters.mode) params.append('mode', filters.mode);
         if (filters.decision) params.append('decision', filters.decision);
@@ -14,4 +13,9 @@ export const auditService = {
         const response = await api.get(url);
         return response.data;
     },
+
+    getReliability: async () => {
+        const response = await api.get('/audit/reliability');
+        return response.data;
+    }
 };

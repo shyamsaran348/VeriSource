@@ -8,6 +8,7 @@ from sqlalchemy.orm import Session
 
 from app.core.dependencies import require_admin, get_db
 from app.audit.models import AuditLog
+from app.audit.analytics import get_document_reliability_metrics
 
 router = APIRouter(prefix="/audit", tags=["Audit"])
 
@@ -48,3 +49,15 @@ def get_audit_logs(
         }
         for log in logs
     ]
+
+
+@router.get("/reliability")
+def get_reliability_analytics(
+    db: Session = Depends(get_db),
+    admin=Depends(require_admin),
+):
+    """
+    Phase 10 — Empirical Document Reliability Dashboard
+    - Measures how accurately a document performs under governance.
+    """
+    return get_document_reliability_metrics(db)

@@ -1,11 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { auditService } from '../../services/auditService';
 import DataTable from '../../components/DataTable';
-import { Filter, Search, ChevronDown, Download, RefreshCw } from 'lucide-react';
+import ReliabilityLeaderboard from '../../components/ReliabilityLeaderboard';
+import { Filter, Search, ChevronDown, Download, RefreshCw, BarChart2, List } from 'lucide-react';
 
 const AuditLogs = () => {
     const [logs, setLogs] = useState([]);
+    const [reliabilityData, setReliabilityData] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
+    const [activeTab, setActiveTab] = useState('logs'); // 'logs' or 'reliability'
 
     // Filters
     const [filterMode, setFilterMode] = useState('');
@@ -57,11 +60,34 @@ const AuditLogs = () => {
             });
             setLogs(data);
         } catch (error) {
-            console.error("Failed to fetch audit logs", error);
+            console.error('Failed to fetch logs:', error);
         } finally {
             setIsLoading(false);
         }
     };
+
+    const fetchReliability = async () => {
+        setIsLoading(true);
+        try {
+            const data = await auditService.getReliability();
+            setReliabilityData(data);
+        } catch (error) {
+            console.error('Failed to fetch reliability data:', error);
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    useEffect(() => {
+        if (activeTab === 'logs') {
+            const timer = setTimeout(() => {
+                fetchLogs();
+            }, 300);
+            return () => clearTimeout(timer);
+        } else {
+            fetchReliability();
+        }
+    }, [filterMode, filterDecision, filterHash, activeTab]);
 
     const columns = [
         {
@@ -142,73 +168,113 @@ const AuditLogs = () => {
 
     return (
         <div className="max-w-7xl mx-auto space-y-6">
-            <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-4 mb-2">
+            {/* Dashboard Headers */}
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-8">
                 <div>
-                    <h1 className="text-3xl font-bold tracking-tight mb-2">Immutable Audit Trail</h1>
-                    <p className="text-gray-400">Cryptographically logged system decisions and interactions.</p>
+                    <h2 className="text-3xl font-bold text-white mb-2">Audit Dashboard</h2>
+                    <p className="text-gray-400">Governance monitoring & document reliability calibration.</p>
                 </div>
 
-                <button
-                    onClick={handleExportCSV}
-                    disabled={logs.length === 0}
-                    className="flex items-center gap-2 px-4 py-2 bg-brand-navy border border-white/10 hover:bg-white/5 rounded-lg text-sm transition-colors text-white disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                    <Download className="w-4 h-4" />
-                    Export CSV
-                </button>
+                <div className="flex items-center gap-3 bg-brand-navy-light/40 p-1 rounded-xl border border-white/5">
+                    <button
+                        onClick={() => setActiveTab('logs')}
+                        className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition-all ${activeTab === 'logs'
+                            ? 'bg-gold text-brand-navy shadow-lg shadow-gold/20'
+                            : 'text-gray-400 hover:text-white hover:bg-white/5'
+                            }`}
+                    >
+                        <List className="w-4 h-4" />
+                        Audit Logs
+                    </button>
+                    <button
+                        onClick={() => setActiveTab('reliability')}
+                        className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition-all ${activeTab === 'reliability'
+                            ? 'bg-gold text-brand-navy shadow-lg shadow-gold/20'
+                            : 'text-gray-400 hover:text-white hover:bg-white/5'
+                            }`}
+                    >
+                        <BarChart2 className="w-4 h-4" />
+                        Reliability Index
+                    </button>
+                </div>
             </div>
 
-            <div className="bg-brand-navy-light/30 border border-white/5 rounded-xl p-4 flex flex-wrap gap-4 items-center">
-                <div className="flex items-center gap-2 text-sm font-semibold text-gray-400 mr-2">
-                    <Filter className="w-4 h-4" />
-                    FILTERS
-                </div>
+            {/* Controls Row */}
+            <div className="flex flex-wrap items-center gap-4 mb-8">
+                {activeTab === 'logs' && (
+                    <>
+                        <div className="relative">
+                            <Filter className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" />
+                            <select
+                                value={filterMode}
+                                onChange={(e) => setFilterMode(e.target.value)}
+                                className="pl-10 pr-8 py-2 bg-brand-navy-light/40 border border-white/10 rounded-lg text-sm text-gray-300 focus:outline-none focus:border-gold/50 appearance-none"
+                            >
+                                <option value="">All Modes</option>
+                                <option value="policy">Policy</option>
+                                <option value="research">Research</option>
+                            </select>
+                        </div>
 
-                <select
-                    value={filterMode}
-                    onChange={(e) => setFilterMode(e.target.value)}
-                    className="bg-brand-navy border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-gold"
-                >
-                    <option value="">All Modes</option>
-                    <option value="policy">Policy Mode</option>
-                    <option value="research">Research Mode</option>
-                </select>
-
-                <select
-                    value={filterDecision}
-                    onChange={(e) => setFilterDecision(e.target.value)}
-                    className="bg-brand-navy border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-gold"
-                >
-                    <option value="">All Decisions</option>
-                    <option value="approved">Approved</option>
-                    <option value="refused">Refused</option>
-                </select>
+                        <select
+                            value={filterDecision}
+                            onChange={(e) => setFilterDecision(e.target.value)}
+                            className="px-4 py-2 bg-brand-navy-light/40 border border-white/10 rounded-lg text-sm text-gray-300 focus:outline-none focus:border-gold/50 appearance-none"
+                        >
+                            <option value="">All Decisions</option>
+                            <option value="approved">Approved</option>
+                            <option value="refused">Refused</option>
+                        </select>
+                    </>
+                )}
 
                 <button
-                    onClick={fetchLogs}
+                    onClick={activeTab === 'logs' ? fetchLogs : fetchReliability}
                     className="flex items-center gap-2 px-3 py-2 bg-white/5 border border-white/10 hover:bg-white/10 rounded-lg text-xs transition-colors text-gray-400 hover:text-white"
                 >
-                    <RefreshCw className="w-3.5 h-3.5" />
+                    <RefreshCw className={`w-3.5 h-3.5 ${isLoading ? 'animate-spin' : ''}`} />
                     Refresh
                 </button>
-                <div className="ml-auto relative">
-                    <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" />
-                    <input
-                        type="text"
-                        value={filterHash}
-                        onChange={(e) => setFilterHash(e.target.value)}
-                        placeholder="Search by hash..."
-                        className="bg-brand-navy border border-white/10 rounded-lg pl-9 pr-3 py-2 text-sm text-white focus:outline-none focus:border-gold w-48 focus:w-64 transition-all"
-                    />
-                </div>
+
+                {activeTab === 'logs' && (
+                    <>
+                        <div className="ml-auto relative w-full md:w-64">
+                            <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" />
+                            <input
+                                type="text"
+                                value={filterHash}
+                                onChange={(e) => setFilterHash(e.target.value)}
+                                placeholder="Search by Query Hash..."
+                                className="w-full pl-10 pr-4 py-2 bg-brand-navy-light/40 border border-white/10 rounded-lg text-sm text-gray-300 focus:outline-none focus:border-gold/50"
+                            />
+                        </div>
+
+                        <button
+                            onClick={handleExportCSV}
+                            disabled={logs.length === 0}
+                            className="flex items-center gap-2 px-4 py-2 bg-gold/10 hover:bg-gold/20 border border-gold/30 rounded-lg text-sm font-semibold text-gold transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                            <Download className="w-4 h-4" />
+                            Export CSV
+                        </button>
+                    </>
+                )}
             </div>
 
-            <DataTable
-                columns={columns}
-                data={logs}
-                isLoading={isLoading}
-                emptyMessage="No audit logs match current filters."
-            />
+            {/* Analytics/Log Content */}
+            {activeTab === 'logs' ? (
+                <DataTable
+                    columns={columns}
+                    data={logs}
+                    isLoading={isLoading}
+                    emptyMessage="No historical logs match your filters."
+                />
+            ) : (
+                <ReliabilityLeaderboard
+                    data={reliabilityData}
+                    isLoading={isLoading}
+                />
+            )}
         </div>
     );
 };

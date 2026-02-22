@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Float, DateTime, ForeignKey
+from sqlalchemy import Column, Integer, String, Float, DateTime, ForeignKey, Boolean
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.sql import func
 from app.db.base import Base
@@ -19,5 +19,7 @@ class AuditLog(Base):
     decision = Column(String, nullable=False)
 
     confidence_score = Column(Float, nullable=False)
+    
+    conflict_detected = Column(Boolean, default=False, nullable=True)
 
     timestamp = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)

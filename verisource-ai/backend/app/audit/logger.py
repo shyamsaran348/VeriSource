@@ -19,9 +19,11 @@ def log_query_interaction(
     query: str,
     decision: str,
     confidence_score: float,
+    conflict_detected: bool = False,
 ):
     """
     Phase 7 — Safe Audit Logging
+    (Phase 10 Update: Added conflict_detected)
 
     - Hashes query (never stores raw text)
     - Logs approved and refused
@@ -39,6 +41,7 @@ def log_query_interaction(
             query_hash=query_hash,
             decision=decision,
             confidence_score=confidence_score,
+            conflict_detected=conflict_detected,
         )
 
         db.add(log_entry)

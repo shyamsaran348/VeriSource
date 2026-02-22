@@ -113,6 +113,7 @@ def query_document(
         query=request.query,
         decision=decision_obj["decision"],
         confidence_score=decision_obj["confidence_score"],
+        conflict_detected=conflict,
     )
 
     # ---------------------------------------------------
