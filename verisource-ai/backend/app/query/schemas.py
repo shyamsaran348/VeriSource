@@ -1,5 +1,5 @@
 from pydantic import BaseModel, UUID4, field_validator
-from typing import Literal, List, Optional
+from typing import Literal, List, Optional, Dict
 
 
 class QueryRequest(BaseModel):
@@ -36,3 +36,6 @@ class QueryResponse(BaseModel):
     decision: Literal["approved", "refused"]
     confidence_score: float
     reason: str
+    
+    # 🧭 Phase 9 — Counterfactual Refusal Explanation
+    explanation: Optional[Dict] = None

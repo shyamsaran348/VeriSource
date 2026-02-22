@@ -64,7 +64,11 @@ const Result = () => {
                         {isApproved ? (
                             <DecisionCard response={result} />
                         ) : (
-                            <RefusalCard reason={result.reason} confidence_score={result.confidence_score} />
+                            <RefusalCard
+                                reason={result.reason}
+                                confidence_score={result.confidence_score}
+                                explanation={result.explanation}
+                            />
                         )}
 
                         {(!isApproved || result.decision?.toLowerCase() === 'refused') && result.confidence_score > 0 && (

@@ -3,10 +3,12 @@
 from typing import List, Dict
 from app.decision.confidence import compute_confidence
 from app.decision.refusal import get_refusal_reason
+from app.decision.counterfactual import generate_refusal_explanation
 
 
 def make_decision(
     mode: str,
+    query_str: str,
     similarities: List[float],
     conflict_flag: bool,
     model_flag_insufficient: bool
@@ -18,15 +20,18 @@ def make_decision(
     {
         decision: "approved" | "refused",
         confidence_score: float,
-        reason: str
+        reason: str,
+        explanation: Dict | None
     }
     """
 
     if not similarities:
+        reason = "No retrievable evidence found in selected document."
         return {
             "decision": "refused",
             "confidence_score": 0.0,
-            "reason": "No retrievable evidence found in selected document."
+            "reason": reason,
+            "explanation": generate_refusal_explanation(query_str, mode, reason)
         }
 
     avg_similarity = sum(similarities) / len(similarities)
@@ -44,65 +49,62 @@ def make_decision(
     if mode == "policy":
         # Conflict = hard refusal (evidence contradicts itself)
         if conflict_flag:
+            reason = get_refusal_reason(
+                mode, avg_similarity, conflict_flag, model_flag_insufficient
+            )
             return {
                 "decision": "refused",
                 "confidence_score": confidence_score,
-                "reason": get_refusal_reason(
-                    mode, avg_similarity, conflict_flag, model_flag_insufficient
-                )
+                "reason": reason,
+                "explanation": generate_refusal_explanation(query_str, mode, reason)
             }
 
-        # Similarity gate — empirically calibrated via 20+20 CBCS query experiment:
-        #   Supported avg range  : -0.17 – 0.36  (mean 0.145)
-        #   Unsupported avg range: -0.78 – 0.05  (mean -0.198)
-        #   Safe boundary        : 0.05  (midpoint between 0.0457 and 0.058)
-        if avg_similarity < 0.05:  # Calibrated 2026-02-21 — fastembed MiniLM ONNX
+        # Similarity gate
+        if avg_similarity < 0.05:  
+            reason = get_refusal_reason(
+                mode, avg_similarity, conflict_flag, model_flag_insufficient
+            )
             return {
                 "decision": "refused",
                 "confidence_score": confidence_score,
-                "reason": get_refusal_reason(
-                    mode, avg_similarity, conflict_flag, model_flag_insufficient
-                )
+                "reason": reason,
+                "explanation": generate_refusal_explanation(query_str, mode, reason)
             }
-
-        # model_flag_insufficient: ADVISORY ONLY in policy mode.
-        # Calibration experiment (2026-02-21, 20+20 CBCS queries) showed
-        # an ~80% false-positive rate — the LLM outputs INSUFFICIENT_EVIDENCE
-        # even for questions clearly answerable from the CBCS document.
-        # This flag already reduces confidence_score by 50% in confidence.py.
-        # We do NOT let it make a hard governance decision here.
 
         return {
             "decision": "approved",
             "confidence_score": confidence_score,
-            "reason": "Evidence sufficiently supports answer."
+            "reason": "Evidence sufficiently supports answer.",
+            "explanation": None
         }
 
     # ------------------------
     # RESEARCH MODE (TOLERANT)
     # ------------------------
     elif mode == "research":
-
-        # Research mode: similarity gate only — model flag is purely advisory
-        # Calibrated threshold: 0.03 (60% of policy threshold, research tolerates ambiguity)
-        if avg_similarity < 0.03:  # Calibrated 2026-02-21 — fastembed MiniLM ONNX
+        if avg_similarity < 0.03:  
+            reason = get_refusal_reason(
+                mode, avg_similarity, conflict_flag, model_flag_insufficient
+            )
             return {
                 "decision": "refused",
                 "confidence_score": confidence_score,
-                "reason": get_refusal_reason(
-                    mode, avg_similarity, conflict_flag, model_flag_insufficient
-                )
+                "reason": reason,
+                "explanation": generate_refusal_explanation(query_str, mode, reason)
             }
 
         return {
             "decision": "approved",
             "confidence_score": confidence_score,
-            "reason": "Evidence supports answer (research tolerance applied)."
+            "reason": "Evidence supports answer (research tolerance applied).",
+            "explanation": None
         }
 
     # Fallback safety
+    reason = "Invalid mode or governance condition."
     return {
         "decision": "refused",
         "confidence_score": confidence_score,
-        "reason": "Invalid mode or governance condition."
+        "reason": reason,
+        "explanation": generate_refusal_explanation(query_str, mode, reason)
     }

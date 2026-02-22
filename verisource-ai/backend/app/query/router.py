@@ -82,6 +82,7 @@ def query_document(
 
     decision_obj = make_decision(
         mode=request.mode,
+        query_str=request.query,
         similarities=similarities,
         conflict_flag=conflict,
         model_flag_insufficient=parsed["model_flag_insufficient"],
@@ -128,4 +129,5 @@ def query_document(
         decision=decision_obj["decision"],
         confidence_score=decision_obj["confidence_score"],
         reason=decision_obj["reason"],
+        explanation=decision_obj["explanation"],
     )
