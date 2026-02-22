@@ -14,20 +14,26 @@ router = APIRouter(prefix="/audit", tags=["Audit"])
 
 @router.get("/logs")
 def get_audit_logs(
+    mode: str = None,
+    decision: str = None,
+    query_hash: str = None,
     limit: int = 50,
     db: Session = Depends(get_db),
     admin=Depends(require_admin),
 ):
     """
-    Phase 7 — Admin audit log viewer.
-    Returns the most recent audit log entries (newest first).
+    Phase 7 — Admin audit log viewer with search and filtering support.
     """
-    logs = (
-        db.query(AuditLog)
-        .order_by(AuditLog.timestamp.desc())
-        .limit(limit)
-        .all()
-    )
+    query = db.query(AuditLog)
+    
+    if mode:
+        query = query.filter(AuditLog.mode == mode)
+    if decision:
+        query = query.filter(AuditLog.decision == decision)
+    if query_hash:
+        query = query.filter(AuditLog.query_hash.ilike(f"%{query_hash}%"))
+        
+    logs = query.order_by(AuditLog.timestamp.desc()).limit(limit).all()
 
     return [
         {

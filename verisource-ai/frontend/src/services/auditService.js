@@ -8,6 +8,7 @@ export const auditService = {
         if (filters.decision) params.append('decision', filters.decision);
         if (filters.documentId) params.append('document_id', filters.documentId);
         if (filters.userId) params.append('user_id', filters.userId);
+        if (filters.query_hash) params.append('query_hash', filters.query_hash);
 
         const url = `/audit/logs?${params.toString()}`;
         const response = await api.get(url);
