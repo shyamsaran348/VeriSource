@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { auditService } from '../../services/auditService';
 import DataTable from '../../components/DataTable';
-import { Filter, Search, ChevronDown, Download } from 'lucide-react';
+import { Filter, Search, ChevronDown, Download, RefreshCw } from 'lucide-react';
 
 const AuditLogs = () => {
     const [logs, setLogs] = useState([]);
@@ -51,9 +51,9 @@ const AuditLogs = () => {
         setIsLoading(true);
         try {
             const data = await auditService.getLogs({
-                mode: filterMode || undefined,
-                decision: filterDecision || undefined,
-                query_hash: filterHash || undefined
+                mode: filterMode?.trim() || undefined,
+                decision: filterDecision?.trim() || undefined,
+                query_hash: filterHash?.trim() || undefined
             });
             setLogs(data);
         } catch (error) {
@@ -93,14 +93,17 @@ const AuditLogs = () => {
         {
             header: 'Mode',
             accessor: 'mode',
-            cell: (row) => (
-                <span className={`text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded border ${row.mode === 'policy'
-                    ? 'text-blue-400 border-blue-500/30 bg-blue-500/10'
-                    : 'text-purple-400 border-purple-500/30 bg-purple-500/10'
-                    }`}>
-                    {row.mode}
-                </span>
-            )
+            cell: (row) => {
+                const mode = row.mode?.toLowerCase();
+                return (
+                    <span className={`text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded border ${mode === 'policy'
+                        ? 'text-blue-400 border-blue-500/30 bg-blue-500/10'
+                        : 'text-purple-400 border-purple-500/30 bg-purple-500/10'
+                        }`}>
+                        {row.mode}
+                    </span>
+                );
+            }
         },
         {
             header: 'Decision',
@@ -181,6 +184,13 @@ const AuditLogs = () => {
                     <option value="refused">Refused</option>
                 </select>
 
+                <button
+                    onClick={fetchLogs}
+                    className="flex items-center gap-2 px-3 py-2 bg-white/5 border border-white/10 hover:bg-white/10 rounded-lg text-xs transition-colors text-gray-400 hover:text-white"
+                >
+                    <RefreshCw className="w-3.5 h-3.5" />
+                    Refresh
+                </button>
                 <div className="ml-auto relative">
                     <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" />
                     <input

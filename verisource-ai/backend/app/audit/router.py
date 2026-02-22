@@ -27,11 +27,11 @@ def get_audit_logs(
     query = db.query(AuditLog)
     
     if mode:
-        query = query.filter(AuditLog.mode == mode)
+        query = query.filter(AuditLog.mode.ilike(mode.strip()))
     if decision:
-        query = query.filter(AuditLog.decision == decision)
+        query = query.filter(AuditLog.decision.ilike(decision.strip()))
     if query_hash:
-        query = query.filter(AuditLog.query_hash.ilike(f"%{query_hash}%"))
+        query = query.filter(AuditLog.query_hash.ilike(f"%{query_hash.strip()}%"))
         
     logs = query.order_by(AuditLog.timestamp.desc()).limit(limit).all()
 
