@@ -69,7 +69,8 @@ VeriSource AI was built from the ground up over 8 distinct, rigorously tested ph
 | **5** | **LLM Synthesis**| Integrating the `Groq` API (`llama-3.1-8b-instant`). Engineering the strict "Synthesis-Only" prompt templates that remove external knowledge dependencies. | ✅ Done |
 | **6** | **Decision Engine**| Calibrating the mathematical thresholds. Implementing the Variance-based Conflict Detector. | ✅ Done |
 | **7** | **Audit DB** | Creating the `audit_logs` SQL table. Recording every interaction, timestamp, confidence score, and LLM string sequence. | ✅ Done |
-| **8** | **React Frontend**| Building the Vite Single Page Application (SPA). Designing the immersive, glassmorphic Verification Console using Tailwind CSS and Framer Motion. | ✅ Done |
+| **8** | **UX & Robustness**| Hardening the Audit Dashboard with CSV exports, case-insensitive filtering, and immersive glassmorphic UI polish. | ✅ Done |
+| **9** | **Refusal XAI** | **Phase 9: Counterfactual Refusal Explanation Layer.** Implementing "Why Not" guidance for unverified queries to build user trust. | ✅ Done |
 
 ---
 
@@ -95,16 +96,21 @@ If the Governance Engine flags a "Refusal", the Groq LLM API is entirely bypasse
 Transparency is mandatory for compliance tools. Every time a `Student` interacts with the Verification Console, a non-repudiable log is generated in the PostgreSQL `audit_logs` table via SQLAlchemy.
 
 **What gets logged?**
-- `transaction_id`: A randomly generated UUID representing the specific verification attempt.
+- `transaction_id`: A cryptographic SHA-256 hash representing the specific verification attempt for non-repudiable audit trails.
 - `user_id`: The UUID of the authenticated student.
 - `document_id`: The UUID of the strictly bounded target document.
 - `mode`: Currently active validation scope (`policy` or `research`).
 - `query_text`: The exact string entered by the user.
 - `decision_outcome`: The final Governance verdict (`approved` or `refused`).
 - `confidence_score`: The mathematical similarity probability (`0.00` to `1.00`).
-- `timestamp`: UTC DateTime of execution.
+- `timestamp`: UTC DateTime of execution (ISO 8601).
 
-Admins can view these logs in real-time through the React Frontend's `/admin/audit` dashboard, generating CSV exports for compliance officers.
+### Enterprise Hardening (Phase 8 Robustness)
+To ensure the audit system stands up to real-world data inconsistencies, we implemented:
+- **Case-Insensitive (`ilike`) Filtering**: Prevents data silos caused by casing mismatches between manual entry and database state.
+- **Whitespace Tolerance (`strip()`)**: Automatically sanitizes user input and database tokens.
+- **Debounced Global Search**: Real-time filtering of millions of logs without API congestion.
+- **CSV Export Engine**: Allows compliance officers to perform offline analysis of filtered audit trails.
 
 ---
 
@@ -114,19 +120,35 @@ The frontend is a bespoke React 18 Single Page Application (SPA) utilizing Vite 
 
 ### Aesthetic Philosophy
 The UI is designed to look like a secure, high-stakes military or financial terminal rather than a friendly consumer chatbot. It features:
-- Deep `brand-navy` backgrounds (`#0B1121`).
-- Metallic `gold` accent trims (`#C5A24D`).
+- Deep `brand-navy` backgrounds (`#0B1121`) with a custom **film grain overlay** for high-fidelity texture.
+- Metallic `gold` accent trims (`#C5A24D`) and vibrant active states.
 - Glassmorphic backdrop blurs (`backdrop-blur-sm`, `bg-brand-navy-light/30`).
-- Monospace diagnostic fonts (`font-mono`) displaying execution times in epoch ms.
-- Fluid Layouts with Framer Motion (`<motion.div>`) staggered entry animations.
+- **Custom Aesthetic Scrollbars**: Matching the brand-navy palette to remove browser default visual noise.
+- **Keyboard-First Interaction**: Full `Cmd+Enter` (Mac) / `Ctrl+Enter` support for immediate query submission.
+- Monospace diagnostic fonts (`font-mono`) displaying real-time execution metadata.
 
 ### Features
-- **Gatekeeper Auth Login:** Secure role-based routing. Students are bounced from Admin dashboards; Admins are bounced from Student Verification consoles.
-- **Verification Console:** Dual-pane interface. Left side configuration (Mode, Document). Right side conversational input with immediate Post-Mortem visual feedback.
-- **Evidence Reference Panel:** Side-by-side rendering of the exact text chunks extracted from the PDF, displaying their specific structural similarity percentages.
-- **Dynamic Confidence Meter:** A visual progress bar that programmatically scales ONNX vector scores (e.g., visually expanding an 11% score to look fully passing since the ONNX minimum threshold is incredibly strict at 5%).
+- **Gatekeeper Auth Login:** Secure role-based routing with JWT protection.
+- **Verification Console:** Dual-pane interface with immediate Post-Mortem visual feedback.
+- **Evidence Reference Panel:** Side-by-side rendering of the exact text chunks with precise similarity percentages.
+- **Traceability Metadata**: Every result now includes a **Cryptographic Transaction ID** and human-readable time-indexing for absolute evidence provenance.
 
 ---
+
+## 🧭 Deep-Dive: Counterfactual Refusal Layer (Phase 9)
+
+Traditional RAG systems fail silently or provide vague "I don't know" responses. VeriSource AI implements a **Research-Aligned Counterfactual Explanation Layer** to solve the "Interpretability Gap."
+
+### Why Counterfactuals?
+Based on 2024-2025 AI Alignment research (XAI), users trust autonomous systems significantly more when they understand the **boundary conditions** of a refusal.
+
+### How It Works
+When a query is refused due to low similarity (`< 0.05`) or conflict, the **Compass Guide** activates:
+1. **Concept Extraction**: The system identifies the core academic or policy intent (e.g., "Honours Eligibility").
+2. **Missing Evidence Analysis**: It calculates exactly *what* evidence elements would have been required for an approval (e.g., "A formal eligibility clause defining CGPA bounds").
+3. **Structured Guidance**: The student is presented with a "Why Not" checklist, allowing them to refine their query or contact an administrator with precise missing-info tags.
+
+*This elevates the platform from a simple validator to a **Transparent Epistemic Assistant.***
 
 ## ⚙️ Full Technology Stack
 
