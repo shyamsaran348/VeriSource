@@ -50,10 +50,10 @@ def query_document(
     validate_document_access(document, request.mode)
 
     # 3️⃣ Strict single-document retrieval
-    raw_results = retrieve(str(request.document_id), request.query)
+    raw_results = retrieve(str(request.document_id), request.query, request.mode)
 
     # 4️⃣ Structured evidence extraction
-    evidence_dicts = extract_evidence(raw_results)
+    evidence_dicts = extract_evidence(raw_results, request.query)
     evidence_blocks = [EvidenceBlock(**block) for block in evidence_dicts]
 
     # 5️⃣ Mode-aware conflict detection

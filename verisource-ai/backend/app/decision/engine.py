@@ -35,6 +35,12 @@ def make_decision(
         }
 
     avg_similarity = sum(similarities) / len(similarities)
+    
+    # 🔹 CALIBRATION: Signal-to-Noise Gating
+    # For technical technical papers, irrelevant chunks (negative similarity) drown out
+    # a single high-precision match. We calculate signal strength from positives only.
+    positive_sims = [s for s in similarities if s > 0]
+    avg_positive_sim = sum(positive_sims) / len(positive_sims) if positive_sims else avg_similarity
 
     confidence_score = compute_confidence(
         similarities=similarities,
@@ -50,7 +56,7 @@ def make_decision(
         # Conflict = hard refusal (evidence contradicts itself)
         if conflict_flag:
             reason = get_refusal_reason(
-                mode, avg_similarity, conflict_flag, model_flag_insufficient
+                mode, avg_positive_sim, conflict_flag, model_flag_insufficient
             )
             return {
                 "decision": "refused",
@@ -59,10 +65,10 @@ def make_decision(
                 "explanation": generate_refusal_explanation(query_str, mode, reason)
             }
 
-        # Similarity gate
-        if avg_similarity < 0.05:  
+        # Similarity gate (Using signal strength)
+        if avg_positive_sim < 0.05:  
             reason = get_refusal_reason(
-                mode, avg_similarity, conflict_flag, model_flag_insufficient
+                mode, avg_positive_sim, conflict_flag, model_flag_insufficient
             )
             return {
                 "decision": "refused",
@@ -82,9 +88,10 @@ def make_decision(
     # RESEARCH MODE (TOLERANT)
     # ------------------------
     elif mode == "research":
-        if avg_similarity < 0.03:  
+        # Research mode is highly sensitive to signal strength in large technical docs
+        if avg_positive_sim < 0.03:  
             reason = get_refusal_reason(
-                mode, avg_similarity, conflict_flag, model_flag_insufficient
+                mode, avg_positive_sim, conflict_flag, model_flag_insufficient
             )
             return {
                 "decision": "refused",

@@ -51,3 +51,9 @@ verisource-ai/backend/vector_store_test/
 # Coverage
 .coverage
 htmlcov/
+
+# Local DB & Calibration tools
+verisource-ai/backend/chroma_db/
+verisource-ai/backend/check_text.py
+verisource-ai/backend/inspect_text.py
+verisource-ai/backend/diagnose_research_paper.py.old

@@ -5,7 +5,7 @@ from app.rag.vector_store import get_existing_collection
 TOP_K = 8
 
 
-def retrieve(document_id: str, query: str) -> dict:
+def retrieve(document_id: str, query: str, mode: str = "policy") -> dict:
     """
     Retrieve top-k relevant chunks from a SINGLE document collection.
     Strictly document-scoped. Never touches other collections.
@@ -27,10 +27,13 @@ def retrieve(document_id: str, query: str) -> dict:
     # Embed query using fastembed (ONNX Runtime — no mutex conflict)
     query_embedding = embed_query(query)
 
+    # Dynamic depth: Research mode explores deeper to find technical needles
+    k = 15 if mode == "research" else TOP_K
+
     # Query the collection with metadata and distances
     results = collection.query(
         query_embeddings=[query_embedding],
-        n_results=min(TOP_K, count),
+        n_results=min(k, count),
         include=["documents", "metadatas", "distances"],
     )
 
