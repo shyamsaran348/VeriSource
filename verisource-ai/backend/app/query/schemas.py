@@ -39,3 +39,7 @@ class QueryResponse(BaseModel):
     
     # 🧭 Phase 9 — Counterfactual Refusal Explanation
     explanation: Optional[Dict] = None
+    
+    # Traceability
+    query_hash: Optional[str] = None
+    timestamp: Optional[str] = None

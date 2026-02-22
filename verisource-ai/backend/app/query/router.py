@@ -119,6 +119,9 @@ def query_document(
     # 🔒 Final Governed Response
     # ---------------------------------------------------
 
+    from datetime import datetime
+    from app.audit.logger import hash_query
+
     return QueryResponse(
         document_id=request.document_id,
         mode=request.mode,
@@ -130,4 +133,6 @@ def query_document(
         confidence_score=decision_obj["confidence_score"],
         reason=decision_obj["reason"],
         explanation=decision_obj["explanation"],
+        query_hash=hash_query(request.query),
+        timestamp=datetime.utcnow().isoformat()
     )

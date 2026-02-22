@@ -101,11 +101,13 @@ const Result = () => {
                                 <div className="space-y-2 text-xs font-mono text-gray-400">
                                     <div className="flex justify-between">
                                         <span>Transaction ID</span>
-                                        <span className="text-gray-300">{result.hash || 'N/A'}</span>
+                                        <span className="text-gray-300">{result.query_hash?.substring(0, 16)}...</span>
                                     </div>
                                     <div className="flex justify-between">
-                                        <span>Execution Time</span>
-                                        <span className="text-gray-300">{new Date(result.timestamp).getTime()}ms epoch</span>
+                                        <span>Logged At</span>
+                                        <span className="text-gray-300">
+                                            {result.timestamp ? new Date(result.timestamp).toLocaleTimeString() : 'N/A'}
+                                        </span>
                                     </div>
                                     <div className="flex justify-between">
                                         <span>Policy Mode</span>
