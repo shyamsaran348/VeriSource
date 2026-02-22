@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { documentService } from '../../services/documentService';
 import { auditService } from '../../services/auditService';
-import { BarChart3, Users, FileText, AlertTriangle } from 'lucide-react';
+import { BarChart3, FileText, AlertTriangle, Activity, ShieldCheck, ChevronRight } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
 
@@ -11,25 +11,33 @@ const Dashboard = () => {
         activePolicyDocs: 0,
         totalQueries: 0,
         refusalRate: 0,
+        systemReliability: 0,
     });
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
         const fetchDashboardData = async () => {
             try {
-                const [docs, logs] = await Promise.all([
+                const [docs, logs, reliability] = await Promise.all([
                     documentService.getDocuments(),
-                    auditService.getLogs()
+                    auditService.getLogs(),
+                    auditService.getReliability()
                 ]);
 
                 const totalQueries = logs.length;
-                const refusals = logs.filter(log => log.decision === 'Refused').length;
+                const refusals = logs.filter(log => log.decision?.toLowerCase() === 'refused').length;
+
+                // Aggregate reliability
+                const avgReliability = reliability.length > 0
+                    ? reliability.reduce((acc, curr) => acc + curr.reliability_index, 0) / reliability.length
+                    : 0;
 
                 setStats({
                     totalDocs: docs.length,
-                    activePolicyDocs: docs.filter(doc => doc.mode === 'policy' && doc.active !== false).length,
+                    activePolicyDocs: docs.filter(doc => (doc.mode === 'policy' || doc.is_active)).length,
                     totalQueries,
-                    refusalRate: totalQueries > 0 ? Math.round((refusals / totalQueries) * 100) : 0
+                    refusalRate: totalQueries > 0 ? Math.round((refusals / totalQueries) * 100) : 0,
+                    systemReliability: Math.round(avgReliability * 100)
                 });
             } catch (error) {
                 console.error("Failed to load admin stats", error);
@@ -43,16 +51,57 @@ const Dashboard = () => {
 
     const statCards = [
         { label: 'Total Documents', value: stats.totalDocs, icon: FileText, color: 'text-blue-400', bg: 'bg-blue-400/10' },
-        { label: 'Active Policy Corpus', value: stats.activePolicyDocs, icon: ShieldAlertIcon, color: 'text-green-400', bg: 'bg-green-400/10' },
+        { label: 'Active Policy Corpus', value: stats.activePolicyDocs, icon: ShieldCheck, color: 'text-green-400', bg: 'bg-green-400/10' },
         { label: 'Total Verifications', value: stats.totalQueries, icon: BarChart3, color: 'text-gold', bg: 'bg-gold/10' },
         { label: 'System Refusal Rate', value: `${stats.refusalRate}%`, icon: AlertTriangle, color: 'text-red-400', bg: 'bg-red-400/10' },
     ];
 
     return (
         <div className="max-w-7xl mx-auto space-y-8">
-            <div>
-                <h1 className="text-3xl font-bold tracking-tight mb-2">System Overview</h1>
-                <p className="text-gray-400">VeriSource AI Infrastructure Control Panel</p>
+            <div className="flex justify-between items-end">
+                <div>
+                    <h1 className="text-3xl font-bold tracking-tight mb-2">System Overview</h1>
+                    <p className="text-gray-400">VeriSource AI Infrastructure Control Panel</p>
+                </div>
+
+                <motion.div
+                    initial={{ opacity: 0, x: 20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    className="bg-brand-navy-light/40 border border-white/5 p-4 rounded-2xl flex items-center gap-6"
+                >
+                    <div className="text-right">
+                        <p className="text-[10px] text-gray-500 uppercase font-bold tracking-widest mb-1">System Trust Score</p>
+                        <p className={`text-2xl font-black font-mono ${stats.systemReliability > 70 ? 'text-green-400' : stats.systemReliability > 40 ? 'text-blue-400' : 'text-red-400'}`}>
+                            {loading ? '--' : stats.systemReliability}%
+                        </p>
+                    </div>
+                    <div className="w-12 h-12 rounded-full border-2 border-white/5 flex items-center justify-center relative">
+                        <Activity className={`w-6 h-6 ${stats.systemReliability > 70 ? 'text-green-500' : 'text-gold'} animate-pulse`} />
+                        <svg className="absolute inset-0 w-full h-full -rotate-90">
+                            <circle
+                                cx="24"
+                                cy="24"
+                                r="22"
+                                fill="none"
+                                stroke="currentColor"
+                                strokeWidth="2"
+                                className="text-white/5"
+                            />
+                            <motion.circle
+                                cx="24"
+                                cy="24"
+                                r="22"
+                                fill="none"
+                                stroke="currentColor"
+                                strokeWidth="2"
+                                strokeDasharray="138"
+                                initial={{ strokeDashoffset: 138 }}
+                                animate={{ strokeDashoffset: 138 - (138 * stats.systemReliability) / 100 }}
+                                className={stats.systemReliability > 70 ? 'text-green-500' : stats.systemReliability > 40 ? 'text-gold' : 'text-red-500'}
+                            />
+                        </svg>
+                    </div>
+                </motion.div>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -77,7 +126,6 @@ const Dashboard = () => {
                                     <Icon className="w-6 h-6" />
                                 </div>
                             </div>
-
                             <div className={`absolute -bottom-6 -right-6 w-24 h-24 rounded-full blur-2xl opacity-20 ${stat.bg.replace('/10', '')}`} />
                         </motion.div>
                     );
@@ -87,7 +135,7 @@ const Dashboard = () => {
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mt-8">
                 <div className="bg-brand-navy-light/30 border border-white/5 rounded-2xl p-8">
                     <h3 className="text-xl font-bold mb-6 flex items-center gap-2">
-                        <ShieldAlertIcon className="w-5 h-5 text-gold" />
+                        <Activity className="w-5 h-5 text-gold" />
                         Quick Actions
                     </h3>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -109,49 +157,38 @@ const Dashboard = () => {
                     </div>
                 </div>
 
-                <div className="bg-brand-navy-light/30 border border-white/5 rounded-2xl p-8">
-                    <h3 className="text-xl font-bold mb-6 text-white">System Health</h3>
-                    <div className="space-y-6">
-                        <div className="flex items-center justify-between border-b border-white/5 pb-4">
-                            <div className="flex items-center gap-3">
-                                <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
-                                <span className="text-gray-300">FastAPI Backend</span>
+                <div className="bg-brand-navy-light/30 border border-white/5 rounded-2xl p-8 group cursor-pointer hover:border-gold/30 transition-all relative">
+                    <Link to="/admin/audit" className="absolute inset-0 z-10" />
+                    <div className="flex justify-between items-start mb-6">
+                        <h3 className="text-xl font-bold text-white flex items-center gap-2">
+                            <ShieldCheck className="w-5 h-5 text-green-500" />
+                            Reliability Calibration
+                        </h3>
+                        <ChevronRight className="w-5 h-5 text-gray-500 group-hover:text-gold transition-colors" />
+                    </div>
+
+                    <div className="space-y-4">
+                        <p className="text-sm text-gray-400 leading-relaxed">
+                            Empirical trust score of the entire policy corpus based on historical audit trails.
+                        </p>
+                        <div className="flex items-center gap-4">
+                            <div className="flex-1 h-2 bg-white/5 rounded-full overflow-hidden">
+                                <motion.div
+                                    initial={{ width: 0 }}
+                                    animate={{ width: `${stats.systemReliability}%` }}
+                                    className={`h-full ${stats.systemReliability > 70 ? 'bg-green-500' : 'bg-gold'}`}
+                                />
                             </div>
-                            <span className="text-green-400 text-sm font-mono">Operational</span>
+                            <span className="text-xs font-mono text-gray-500">{stats.systemReliability}% TOTAL</span>
                         </div>
-                        <div className="flex items-center justify-between border-b border-white/5 pb-4">
-                            <div className="flex items-center gap-3">
-                                <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
-                                <span className="text-gray-300">ChromaDB Vector Store</span>
-                            </div>
-                            <span className="text-green-400 text-sm font-mono">Operational</span>
-                        </div>
-                        <div className="flex items-center justify-between border-b border-white/5 pb-4">
-                            <div className="flex items-center gap-3">
-                                <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
-                                <span className="text-gray-300">Supabase Auth/DB</span>
-                            </div>
-                            <span className="text-green-400 text-sm font-mono">Operational</span>
-                        </div>
-                        <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-3">
-                                <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
-                                <span className="text-gray-300">LLM Generation</span>
-                            </div>
-                            <span className="text-green-400 text-sm font-mono">Governed</span>
-                        </div>
+                        <p className="text-[10px] text-gray-500 uppercase tracking-widest">
+                            {stats.systemReliability > 70 ? 'CORPUS STABLE' : 'CALIBRATION REQUIRED'} • AUGMENTED DECISION LOGS
+                        </p>
                     </div>
                 </div>
             </div>
         </div>
     );
 };
-
-// Extracted simple shield icon for reuse
-const ShieldAlertIcon = ({ className }) => (
-    <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
-    </svg>
-)
 
 export default Dashboard;

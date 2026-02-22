@@ -69,8 +69,9 @@ VeriSource AI was built from the ground up over 8 distinct, rigorously tested ph
 | **5** | **LLM Synthesis**| Integrating the `Groq` API (`llama-3.1-8b-instant`). Engineering the strict "Synthesis-Only" prompt templates that remove external knowledge dependencies. | ✅ Done |
 | **6** | **Decision Engine**| Calibrating the mathematical thresholds. Implementing the Variance-based Conflict Detector. | ✅ Done |
 | **7** | **Audit DB** | Creating the `audit_logs` SQL table. Recording every interaction, timestamp, confidence score, and LLM string sequence. | ✅ Done |
-| **8** | **UX & Robustness**| Hardening the Audit Dashboard with CSV exports, case-insensitive filtering, and immersive glassmorphic UI polish. | ✅ Done |
-| **9** | **Refusal XAI** | **Phase 9: Counterfactual Refusal Explanation Layer.** Implementing "Why Not" guidance for unverified queries to build user trust. | ✅ Done |
+| **8** | **UX & Robustness**| Hardening the Audit Dashboard with CSV exports and primary UI polish. | ✅ Done |
+| **9** | **Refusal XAI** | **Counterfactual Refusal Layer.** Providing "Why Not" guidance for unverified queries. | ✅ Done |
+| **10**| **Reliability Core**| **Reliability & Calibration Dashboard.** Empirical trust scoring based on audit history. | ✅ Done |
 
 ---
 
