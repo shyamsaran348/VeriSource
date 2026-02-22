@@ -22,7 +22,7 @@ const AdminLayout = () => {
     ];
 
     return (
-        <div className="flex h-screen bg-brand-navy text-white overflow-hidden">
+        <div className="flex h-screen bg-brand-navy text-white overflow-hidden bg-grain">
             <aside className="w-64 border-r border-white/10 bg-brand-navy-light/40 flex flex-col hidden md:flex relative z-10">
                 <div className="absolute inset-0 bg-gradient-to-b from-transparent to-brand-navy/80 pointer-events-none" />
 

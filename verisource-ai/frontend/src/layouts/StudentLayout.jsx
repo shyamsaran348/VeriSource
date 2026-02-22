@@ -13,7 +13,7 @@ const StudentLayout = () => {
     };
 
     return (
-        <div className="flex h-screen bg-brand-navy text-white overflow-hidden">
+        <div className="flex h-screen bg-brand-navy text-white overflow-hidden bg-grain">
             {/* Sidebar - Placeholder for actual Sidebar component */}
             <aside className="w-64 border-r border-white/10 bg-brand-navy-light/50 flex flex-col hidden md:flex">
                 <div className="p-6 border-b border-white/10 flex items-center gap-2">

@@ -52,7 +52,7 @@ const Register = () => {
     };
 
     return (
-        <div className="min-h-screen bg-brand-navy flex items-center justify-center p-4 relative overflow-hidden">
+        <div className="min-h-screen bg-brand-navy flex items-center justify-center p-4 relative overflow-hidden bg-grain">
             {/* Dynamic Background Elements */}
             <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-brand-navy-light rounded-full blur-3xl opacity-40 mix-blend-screen animate-pulse"></div>
             <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-gold/10 rounded-full blur-3xl opacity-40 mix-blend-screen animate-pulse" style={{ animationDelay: '1s' }}></div>
@@ -126,8 +126,8 @@ const Register = () => {
                                     type="button"
                                     onClick={() => setRole('student')}
                                     className={`py-3 px-4 rounded-xl border flex items-center justify-center gap-2 transition-all ${role === 'student'
-                                            ? 'bg-blue-500/10 border-blue-500/50 text-blue-400 shadow-[0_0_10px_rgba(59,130,246,0.1)]'
-                                            : 'bg-brand-navy border-white/10 text-gray-500 hover:text-gray-300 hover:border-white/20'
+                                        ? 'bg-blue-500/10 border-blue-500/50 text-blue-400 shadow-[0_0_10px_rgba(59,130,246,0.1)]'
+                                        : 'bg-brand-navy border-white/10 text-gray-500 hover:text-gray-300 hover:border-white/20'
                                         }`}
                                 >
                                     <User className="w-4 h-4" />
@@ -137,8 +137,8 @@ const Register = () => {
                                     type="button"
                                     onClick={() => setRole('admin')}
                                     className={`py-3 px-4 rounded-xl border flex items-center justify-center gap-2 transition-all ${role === 'admin'
-                                            ? 'bg-red-500/10 border-red-500/50 text-red-500 shadow-[0_0_10px_rgba(239,68,68,0.1)]'
-                                            : 'bg-brand-navy border-white/10 text-gray-500 hover:text-gray-300 hover:border-white/20'
+                                        ? 'bg-red-500/10 border-red-500/50 text-red-500 shadow-[0_0_10px_rgba(239,68,68,0.1)]'
+                                        : 'bg-brand-navy border-white/10 text-gray-500 hover:text-gray-300 hover:border-white/20'
                                         }`}
                                 >
                                     <Briefcase className="w-4 h-4" />

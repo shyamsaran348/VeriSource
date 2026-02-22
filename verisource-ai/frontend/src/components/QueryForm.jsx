@@ -4,6 +4,12 @@ import { Search, Loader2 } from 'lucide-react';
 const QueryForm = ({ onSubmit, isSubmitting, disabled, modeColorClass }) => {
     const [query, setQuery] = useState('');
 
+    const handleKeyDown = (e) => {
+        if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') {
+            handleSubmit(e);
+        }
+    };
+
     const handleSubmit = (e) => {
         e.preventDefault();
         if (query.trim() && !disabled && !isSubmitting) {
@@ -29,6 +35,7 @@ const QueryForm = ({ onSubmit, isSubmitting, disabled, modeColorClass }) => {
                 <textarea
                     value={query}
                     onChange={(e) => setQuery(e.target.value)}
+                    onKeyDown={handleKeyDown}
                     disabled={disabled || isSubmitting}
                     placeholder={disabled ? "Select Verification Mode and Target Corpus first..." : "Enter verification query based strictly on the selected document..."}
                     className={`w-full h-full min-h-[160px] p-6 bg-brand-navy border border-white/10 rounded-2xl text-white text-lg placeholder-gray-500 resize-none focus:outline-none focus:ring-2 ${ringClass} transition-all disabled:opacity-50 disabled:cursor-not-allowed z-10 relative`}
