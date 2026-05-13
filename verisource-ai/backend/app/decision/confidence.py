@@ -58,19 +58,25 @@ def compute_confidence(
         confidence *= 0.8
 
     # Clamp between 0 and 1
-    confidence = max(0.0, min(1.0, confidence))
+    return max(0.0, min(1.0, confidence))
 
-    # ⚖️ HUMANE PERCEPTION SCALING (Judge Calibration)
-    # Technical vector space is very dense (0.1 is actually quite good).
-    # We map this to a "Human Trust" scale where approved = 70%+
-    if confidence > 0:
-        import math
-        # Sigmoid-style boost
-        # A raw confidence of 0.05 (our gate) should map to ~70%
-        # A raw confidence of 0.20 (solid) should map to ~95%
-        scaled = 1.0 - math.exp(-20 * confidence)
-        
-        # New Floor: 0.70 (70%) for anything that passed governance
-        confidence = 0.7 + (scaled * 0.29) 
 
-    return round(max(0.0, min(0.99, confidence)), 4)
+def scale_confidence_for_ui(raw_confidence: float) -> float:
+    """
+    ⚖️ HUMANE PERCEPTION SCALING (Judge Calibration)
+    Technical vector space is very dense (0.1 is actually quite good).
+    We map this to a "Human Trust" scale where approved = 70%+
+    """
+    if raw_confidence <= 0:
+        return 0.0
+
+    import math
+    # Sigmoid-style boost
+    # A raw confidence of 0.05 (our gate) should map to ~70%
+    # A raw confidence of 0.20 (solid) should map to ~95%
+    scaled = 1.0 - math.exp(-20 * raw_confidence)
+    
+    # New Floor: 0.70 (70%) for anything that passed governance
+    ui_confidence = 0.7 + (scaled * 0.29) 
+    
+    return round(max(0.0, min(0.99, ui_confidence)), 4)

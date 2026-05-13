@@ -41,7 +41,8 @@ def create_user(db: Session, username: str, password: str, role: str):
 
     except IntegrityError:
         db.rollback()
-        raise Exception("Username already exists")
+        from fastapi import HTTPException
+        raise HTTPException(status_code=400, detail="Username already exists")
 
 
 def authenticate_user(db: Session, username: str, password: str):

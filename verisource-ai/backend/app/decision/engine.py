@@ -1,7 +1,7 @@
 # app/decision/engine.py
 
 from typing import List, Dict
-from app.decision.confidence import compute_confidence
+from app.decision.confidence import compute_confidence, scale_confidence_for_ui
 from app.decision.refusal import get_refusal_reason
 from app.decision.counterfactual import generate_refusal_explanation
 
@@ -14,17 +14,23 @@ def make_decision(
     model_flag_insufficient: bool
 ) -> Dict:
     """
-    System-level governance decision.
+    Central Governance Hub: Implements a multi-stage deterministic decision gate.
+    
+    This function decides whether to 'approve' or 'refuse' a query based on
+    statistical signal strength and model-level uncertainty markers.
+
+    Args:
+        mode: Policy (Strict) or Research (Tolerant)
+        query_str: The raw user query
+        similarities: List of cosine similarity scores from retrieved chunks
+        conflict_flag: Boolean indicating if retrieved chunks contradict each other
+        model_flag_insufficient: Boolean indicating if LLM signaled a lack of evidence
 
     Returns:
-    {
-        decision: "approved" | "refused",
-        confidence_score: float,
-        reason: str,
-        explanation: Dict | None
-    }
+        Dict containing decision, score, and grounded reasoning.
     """
 
+    # 1. Edge Case: No evidence retrieved at all
     if not similarities:
         reason = "No retrievable evidence found in selected document."
         return {
@@ -34,84 +40,76 @@ def make_decision(
             "explanation": generate_refusal_explanation(query_str, mode, reason)
         }
 
-    avg_similarity = sum(similarities) / len(similarities)
-    
-    # 🔹 CALIBRATION: Signal-to-Noise Gating
-    # For technical technical papers, irrelevant chunks (negative similarity) drown out
-    # a single high-precision match. We calculate signal strength from positives only.
+    # 2. Statistical Signal Filtering (Signal-to-Noise Gating)
+    # Technical documents often contain noise. We calculate 'Signal Strength' 
+    # based ONLY on positive technical matches.
     positive_sims = [s for s in similarities if s > 0]
-    avg_positive_sim = sum(positive_sims) / len(positive_sims) if positive_sims else avg_similarity
+    avg_positive_sim = sum(positive_sims) / len(positive_sims) if positive_sims else 0.0
 
-    confidence_score = compute_confidence(
+    # 3. Calculate Core Confidence
+    # This involves statistical variance check and model signal processing.
+    raw_confidence = compute_confidence(
         similarities=similarities,
         conflict_flag=conflict_flag,
         model_flag_insufficient=model_flag_insufficient,
         mode=mode
     )
 
-    # ------------------------
-    # POLICY MODE (STRICT)
-    # ------------------------
+    # 4. Mode-Aware Gating Logic
+    
+    # ── POLICY MODE (STRICT) ──────────────────────────────────────────────────
     if mode == "policy":
-        # Conflict = hard refusal (evidence contradicts itself)
+        # Strict Conflict Check: Evidence must be harmonious
         if conflict_flag:
-            reason = get_refusal_reason(
-                mode, avg_positive_sim, conflict_flag, model_flag_insufficient
-            )
+            reason = get_refusal_reason(mode, avg_positive_sim, conflict_flag, model_flag_insufficient)
             return {
                 "decision": "refused",
-                "confidence_score": confidence_score,
+                "confidence_score": round(raw_confidence, 4),
                 "reason": reason,
                 "explanation": generate_refusal_explanation(query_str, mode, reason)
             }
 
-        # Similarity gate (Using signal strength)
+        # Strict Signal Gate: Must meet minimum precision threshold
         if avg_positive_sim < 0.05:  
-            reason = get_refusal_reason(
-                mode, avg_positive_sim, conflict_flag, model_flag_insufficient
-            )
+            reason = get_refusal_reason(mode, avg_positive_sim, conflict_flag, model_flag_insufficient)
             return {
                 "decision": "refused",
-                "confidence_score": confidence_score,
+                "confidence_score": round(raw_confidence, 4),
                 "reason": reason,
                 "explanation": generate_refusal_explanation(query_str, mode, reason)
             }
 
         return {
             "decision": "approved",
-            "confidence_score": confidence_score,
+            "confidence_score": scale_confidence_for_ui(raw_confidence),
             "reason": "Evidence sufficiently supports answer.",
             "explanation": None
         }
 
-    # ------------------------
-    # RESEARCH MODE (TOLERANT)
-    # ------------------------
+    # ── RESEARCH MODE (TOLERANT) ──────────────────────────────────────────────
     elif mode == "research":
-        # Research mode is highly sensitive to signal strength in large technical docs
+        # Research mode allows for weaker signals to explore technical nuances
         if avg_positive_sim < 0.03:  
-            reason = get_refusal_reason(
-                mode, avg_positive_sim, conflict_flag, model_flag_insufficient
-            )
+            reason = get_refusal_reason(mode, avg_positive_sim, conflict_flag, model_flag_insufficient)
             return {
                 "decision": "refused",
-                "confidence_score": confidence_score,
+                "confidence_score": round(raw_confidence, 4),
                 "reason": reason,
                 "explanation": generate_refusal_explanation(query_str, mode, reason)
             }
 
         return {
             "decision": "approved",
-            "confidence_score": confidence_score,
+            "confidence_score": scale_confidence_for_ui(raw_confidence),
             "reason": "Evidence supports answer (research tolerance applied).",
             "explanation": None
         }
 
-    # Fallback safety
+    # Fallback safety (Default to Refusal)
     reason = "Invalid mode or governance condition."
     return {
         "decision": "refused",
-        "confidence_score": confidence_score,
+        "confidence_score": round(raw_confidence, 4),
         "reason": reason,
         "explanation": generate_refusal_explanation(query_str, mode, reason)
     }

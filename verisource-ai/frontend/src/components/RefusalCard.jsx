@@ -69,11 +69,15 @@ const RefusalCard = ({ reason, confidence_score, explanation }) => {
                             ))}
                         </ul>
 
-                        <div className="mt-6 pt-4 border-t border-white/5">
+                        <div className="mt-6 pt-4 border-t border-white/5 flex flex-col gap-4">
                             <div className="flex items-center justify-between text-[10px] font-mono text-gray-500">
                                 <span>Calibrated Gate</span>
                                 <span className="text-gray-400">{explanation.mode_threshold_context?.calibrated_gate} similarities</span>
                             </div>
+                            
+                            <button className="w-full py-2 bg-white/5 hover:bg-white/10 border border-white/10 rounded-lg text-[10px] font-bold text-gray-400 hover:text-gold transition-all uppercase tracking-widest">
+                                Request Human Review
+                            </button>
                         </div>
                     </motion.div>
                 )}

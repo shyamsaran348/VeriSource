@@ -1,4 +1,5 @@
 import hashlib
+import uuid
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import SQLAlchemyError
 from app.audit.models import AuditLog
@@ -32,6 +33,13 @@ def log_query_interaction(
     """
 
     try:
+        # Ensure UUID object for SQLite
+        if isinstance(document_id, str):
+            try:
+                document_id = uuid.UUID(document_id)
+            except ValueError:
+                pass # Fallback to original
+
         query_hash = hash_query(query)
 
         log_entry = AuditLog(

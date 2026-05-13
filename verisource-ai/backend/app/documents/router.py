@@ -11,11 +11,12 @@ router = APIRouter(prefix="/documents", tags=["Documents"])
 
 class DocumentResponse(BaseModel):
     document_id: str
-    document_name: str
+    name: str
     mode: str
     version: str
     authority: Optional[str]
-    active: bool
+    is_active: bool
+    audit_results: Optional[dict]
     created_at: datetime
 
     class Config:
@@ -31,15 +32,15 @@ def get_documents(mode: Optional[str] = None, db: Session = Depends(get_db)):
             
     documents = query.order_by(Document.created_at.desc()).all()
     
-    # Map 'name' to 'document_name' for frontend compatibility
     return [
         {
             "document_id": str(doc.document_id),
-            "document_name": doc.name,
+            "name": doc.name,
             "mode": doc.mode,
             "version": doc.version,
             "authority": doc.authority,
-            "active": doc.is_active,
+            "is_active": doc.is_active,
+            "audit_results": doc.audit_results,
             "created_at": doc.created_at
         }
         for doc in documents

@@ -95,10 +95,10 @@ const AuditLogs = () => {
             accessor: 'timestamp',
             cell: (row) => (
                 <div className="font-mono text-xs text-gray-400">
-                    {new Date(row.timestamp).toLocaleString(undefined, {
+                    {row.timestamp ? new Date(row.timestamp).toLocaleString(undefined, {
                         year: 'numeric', month: '2-digit', day: '2-digit',
                         hour: '2-digit', minute: '2-digit', second: '2-digit'
-                    })}
+                    }) : 'N/A'}
                 </div>
             )
         },
@@ -107,7 +107,7 @@ const AuditLogs = () => {
             accessor: 'query_hash',
             cell: (row) => (
                 <div className="font-mono text-[10px] text-gray-500 bg-black/30 px-2 py-1 rounded inline-block">
-                    {row.query_hash.substring(0, 12)}...
+                    {row.query_hash?.substring(0, 12) || 'N/A'}...
                 </div>
             )
         },

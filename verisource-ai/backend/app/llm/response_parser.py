@@ -27,6 +27,13 @@ def parse_llm_response(raw_output: str) -> dict:
             "model_flag_insufficient": True,
         }
 
+    # Detect sentinel anywhere in the response (LLM might wrap it in text)
+    if INSUFFICIENT_SENTINEL in raw_output:
+        return {
+            "answer": None,
+            "model_flag_insufficient": True,
+        }
+
     return {
         "answer": raw_output.strip(),
         "model_flag_insufficient": False,

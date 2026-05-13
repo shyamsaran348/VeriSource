@@ -1,4 +1,4 @@
-from sqlalchemy import Column, String, Boolean, UniqueConstraint
+from sqlalchemy import Column, String, Boolean, UniqueConstraint, JSON
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.sql import func
 from sqlalchemy.types import TIMESTAMP
@@ -21,4 +21,8 @@ class Document(Base):
     authority = Column(String, nullable=False)
     hash = Column(String, nullable=False)
     is_active = Column(Boolean, default=True)
+    
+    # 🆕 Meta-RAG: Stores AI-generated reliability metrics
+    audit_results = Column(JSON, nullable=True)
+
     created_at = Column(TIMESTAMP(timezone=True), server_default=func.now())

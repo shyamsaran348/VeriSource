@@ -1,11 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import { documentService } from '../../services/documentService';
 import DataTable from '../../components/DataTable';
-import { Shield, Microscope, Trash2 } from 'lucide-react';
+import { Shield, Microscope, Trash2, Activity } from 'lucide-react';
+import ReliabilityBadge from '../../components/ReliabilityBadge';
+import AuditReportModal from '../../components/AuditReportModal';
 
 const Documents = () => {
     const [documents, setDocuments] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
+    const [selectedAudit, setSelectedAudit] = useState(null);
+    const [isAuditModalOpen, setIsAuditModalOpen] = useState(false);
 
     useEffect(() => {
         fetchDocuments();
@@ -23,14 +27,19 @@ const Documents = () => {
         }
     };
 
+    const handleOpenAudit = (results, docName) => {
+        setSelectedAudit({ results, name: docName });
+        setIsAuditModalOpen(true);
+    };
+
     const columns = [
         {
             header: 'Document Name',
-            accessor: 'document_name',
+            accessor: 'name',
             cell: (row) => (
                 <div className="font-medium text-white">
-                    {row.document_name}
-                    {!row.active && <span className="ml-2 px-1.5 py-0.5 bg-gray-500/20 text-gray-400 text-[10px] rounded border border-gray-500/30 uppercase">Inactive</span>}
+                    {row.name}
+                    {!row.is_active && <span className="ml-2 px-1.5 py-0.5 bg-gray-500/20 text-gray-400 text-[10px] rounded border border-gray-500/30 uppercase">Inactive</span>}
                 </div>
             )
         },
@@ -48,6 +57,16 @@ const Documents = () => {
                         {row.mode}
                     </span>
                 </div>
+            )
+        },
+        {
+            header: 'Reliability',
+            accessor: 'audit_results',
+            cell: (row) => (
+                <ReliabilityBadge 
+                    results={row.audit_results} 
+                    onClick={(res) => handleOpenAudit(res, row.name)}
+                />
             )
         },
         {
@@ -93,7 +112,7 @@ const Documents = () => {
             <div className="flex justify-between items-end">
                 <div>
                     <h1 className="text-3xl font-bold tracking-tight mb-2">Corpus Management</h1>
-                    <p className="text-gray-400">Manage indexed knowledge and semantic embeddings.</p>
+                    <p className="text-gray-400">Manage indexed knowledge and semantic reliability.</p>
                 </div>
             </div>
 
@@ -102,6 +121,13 @@ const Documents = () => {
                 data={documents}
                 isLoading={isLoading}
                 emptyMessage="No documents have been ingested yet. Use the Ingestion flow to add knowledge."
+            />
+
+            <AuditReportModal 
+                isOpen={isAuditModalOpen}
+                onClose={() => setIsAuditModalOpen(false)}
+                results={selectedAudit?.results}
+                docName={selectedAudit?.name}
             />
         </div>
     );

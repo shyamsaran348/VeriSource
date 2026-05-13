@@ -4,6 +4,17 @@ import { auditService } from '../../services/auditService';
 import { BarChart3, FileText, AlertTriangle, Activity, ShieldCheck, ChevronRight } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
+import { ResponsiveContainer, AreaChart, Area, XAxis, YAxis, Tooltip, CartesianGrid } from 'recharts';
+
+const MOCK_RELIABILITY_DATA = [
+    { date: '2024-05-01', score: 65 },
+    { date: '2024-05-03', score: 72 },
+    { date: '2024-05-05', score: 68 },
+    { date: '2024-05-07', score: 85 },
+    { date: '2024-05-09', score: 82 },
+    { date: '2024-05-11', score: 88 },
+    { date: '2024-05-13', score: 91 },
+];
 
 const Dashboard = () => {
     const [stats, setStats] = useState({
@@ -13,6 +24,7 @@ const Dashboard = () => {
         refusalRate: 0,
         systemReliability: 0,
     });
+    const [reliabilityData, setReliabilityData] = useState([]);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
@@ -34,11 +46,19 @@ const Dashboard = () => {
 
                 setStats({
                     totalDocs: docs.length,
-                    activePolicyDocs: docs.filter(doc => (doc.mode === 'policy' || doc.is_active)).length,
+                    activePolicyDocs: docs.filter(doc => doc.mode === 'policy' && doc.active).length,
                     totalQueries,
                     refusalRate: totalQueries > 0 ? Math.round((refusals / totalQueries) * 100) : 0,
                     systemReliability: Math.round(avgReliability * 100)
                 });
+
+                // Prepare data for the chart (Document Title vs Reliability Index)
+                const chartData = reliability.map(item => ({
+                    name: item.title,
+                    score: item.reliability_index * 100
+                })).slice(0, 10); // Show top 10 docs
+
+                setReliabilityData(chartData);
             } catch (error) {
                 console.error("Failed to load admin stats", error);
             } finally {
@@ -157,8 +177,7 @@ const Dashboard = () => {
                     </div>
                 </div>
 
-                <div className="bg-brand-navy-light/30 border border-white/5 rounded-2xl p-8 group cursor-pointer hover:border-gold/30 transition-all relative">
-                    <Link to="/admin/audit" className="absolute inset-0 z-10" />
+                <div className="bg-brand-navy-light/30 border border-white/5 rounded-2xl p-8 group hover:border-gold/30 transition-all relative">
                     <div className="flex justify-between items-start mb-6">
                         <h3 className="text-xl font-bold text-white flex items-center gap-2">
                             <ShieldCheck className="w-5 h-5 text-green-500" />
@@ -166,12 +185,49 @@ const Dashboard = () => {
                         </h3>
                         <ChevronRight className="w-5 h-5 text-gray-500 group-hover:text-gold transition-colors" />
                     </div>
-
                     <div className="space-y-4">
                         <p className="text-sm text-gray-400 leading-relaxed">
                             Empirical trust score of the entire policy corpus based on historical audit trails.
                         </p>
-                        <div className="flex items-center gap-4">
+                        
+                        <div className="h-48 w-full mt-4 flex items-center justify-center">
+                            {reliabilityData.length > 0 ? (
+                                <ResponsiveContainer width="100%" height="100%">
+                                    <AreaChart data={reliabilityData}>
+                                        <defs>
+                                            <linearGradient id="colorScore" x1="0" y1="0" x2="0" y2="1">
+                                                <stop offset="5%" stopColor="#C5A24D" stopOpacity={0.3} />
+                                                <stop offset="95%" stopColor="#C5A24D" stopOpacity={0} />
+                                            </linearGradient>
+                                        </defs>
+                                        <CartesianGrid strokeDasharray="3 3" stroke="#ffffff05" vertical={false} />
+                                        <XAxis 
+                                            dataKey="name" 
+                                            hide 
+                                        />
+                                        <YAxis hide domain={[0, 100]} />
+                                        <Tooltip 
+                                            contentStyle={{ backgroundColor: '#0B1E34', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px' }}
+                                            itemStyle={{ color: '#C5A24D' }}
+                                        />
+                                        <Area 
+                                            type="monotone" 
+                                            dataKey="score" 
+                                            stroke="#C5A24D" 
+                                            strokeWidth={3}
+                                            fillOpacity={1} 
+                                            fill="url(#colorScore)" 
+                                        />
+                                    </AreaChart>
+                                </ResponsiveContainer>
+                            ) : (
+                                <div className="text-gray-500 text-xs font-mono uppercase tracking-widest border border-dashed border-white/10 w-full h-full flex items-center justify-center rounded-xl">
+                                    No Reliability Data Collected
+                                </div>
+                            )}
+                        </div>
+
+                        <div className="flex items-center gap-4 mt-6">
                             <div className="flex-1 h-2 bg-white/5 rounded-full overflow-hidden">
                                 <motion.div
                                     initial={{ width: 0 }}

@@ -1,80 +1,65 @@
+# app/rag/evidence.py
+
 from typing import List, Dict
 from fastapi import HTTPException
-
-
 import re
 
 def extract_evidence(results: dict, query: str = "") -> List[Dict]:
     """
-    Convert raw Chroma query results into structured evidence blocks.
+    Semantic Evidence Processor: Extracts and scores relevant text fragments.
     
-    🆕 TECHNICAL KEYWORD BOOST:
-    If the query contains technical acronyms (e.g. BDLSS, DCT, SHA-512),
-    this adds a small boost (+0.3) to chunks containing exact matches for 
-    those terms. This helps technical 'needles' overcome embedding noise.
+    This function processes raw distance vectors from ChromaDB and applies 
+    higher-order logic (like keyword boosting) to improve groundedness.
+
+    Args:
+        results: Raw dictionary from ChromaDB .query()
+        query: The user's query (used for technical acronym boosting)
+
+    Returns:
+        List of structured evidence blocks with technical scores.
     """
 
     if not results:
-        raise HTTPException(
-            status_code=500,
-            detail="Invalid retrieval result structure."
-        )
+        raise HTTPException(status_code=500, detail="Invalid retrieval result structure.")
 
-    # Extract acronyms from query (Capitalized words, 3+ chars)
-    # Using regex to find e.g. BDLSS, SHA-512, MATLAB
+    # 🚀 TECHNICAL KEYWORD BOOST:
+    # Identify technical acronyms (e.g. CBCS, R2021) to prioritize precision matches.
     acronyms = re.findall(r'[A-Z0-9-]{3,}', query)
 
     documents = results.get("documents", [])
     metadatas = results.get("metadatas", [])
     distances = results.get("distances", [])
 
-    # Chroma returns nested lists
     if not documents or not documents[0]:
-        raise HTTPException(
-            status_code=404,
-            detail="No relevant evidence found in selected document."
-        )
+        raise HTTPException(status_code=404, detail="No relevant evidence found.")
 
     evidence_blocks = []
-
     docs = documents[0]
     metas = metadatas[0]
     dists = distances[0]
 
     for doc_text, meta, distance in zip(docs, metas, dists):
-
         if not meta or "chunk_id" not in meta:
-            raise HTTPException(
-                status_code=500,
-                detail="Chunk metadata missing chunk_id."
-            )
+            continue
 
+        # ⚖️ BASE SIMILARITY: 1 - L2 distance (or cosine distance depending on space)
         similarity_score = 1 - distance
         
-        # 🛡️ Applied Keyword Boost & Perception Scaling
-        # In Research Mode, this is critical for high-precision validation
+        # 📈 APPLIED BOOST:
+        # If a chunk contains an exact match for a technical acronym in the query,
+        # we boost its score to ensure it survives the governance gate.
         boost = 0.0
         for acr in acronyms:
             if acr in doc_text:
-                boost = 0.3 # Strong technical signal
+                boost = 0.3
                 break
         
-        raw_sim = similarity_score + boost
+        final_sim = similarity_score + boost
         
-        # Perception Scale for Extracts: Map technical similarity to 0-100%
-        # Anything above -0.1 should look like a plausible match (60%+)
-        # to focus judges on content rather than vector distances.
-        import math
-        scaled_sim = 1.0 - math.exp(-10 * (raw_sim + 0.2)) # Shared anchor at -0.2
-        final_similarity = 0.6 + (scaled_sim * 0.39)
-        
-        # 🧪 Final Judge Clamp: Never show negative percentages
-        final_similarity = max(0.01, min(0.99, final_similarity))
-
         evidence_blocks.append({
             "chunk_id": meta["chunk_id"],
             "text": doc_text,
-            "similarity": round(final_similarity, 4)
+            "similarity": round(final_sim, 4)
         })
 
     return evidence_blocks

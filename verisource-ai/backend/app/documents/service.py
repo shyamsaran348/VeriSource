@@ -46,7 +46,16 @@ def create_document(
 # PHASE 4 — Retrieval Support
 # =====================================
 
+import uuid
+
 def get_document_by_id(db: Session, document_id: str) -> Document:
+    # Ensure it's a UUID object for SQLAlchemy compatibility (especially with SQLite)
+    if isinstance(document_id, str):
+        try:
+            document_id = uuid.UUID(document_id)
+        except ValueError:
+            raise HTTPException(status_code=400, detail="Invalid document ID format.")
+
     document = db.query(Document).filter(
         Document.document_id == document_id
     ).first()

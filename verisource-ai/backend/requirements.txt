@@ -1,6 +1,7 @@
 fastapi
 uvicorn
 python-dotenv
+python-multipart
 loguru
 pydantic
 pydantic-settings
@@ -11,4 +12,5 @@ python-jose
 chromadb
 sentence-transformers
 pypdf
+fastembed
 groq

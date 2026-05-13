@@ -28,14 +28,20 @@ def _run_pipeline(file_path: str, document_id: str):
     Runs in a thread pool; must NOT touch the event loop.
     Returns number of chunks created on success; raises on error.
     """
-    from app.ingestion.parser import extract_text_from_pdf
     from app.rag.chunker import chunk_text
     from app.rag.embeddings import embed_texts
     from app.rag.vector_store import add_document_chunks
 
     # 1️⃣ Parse
-    logger.info("Extracting text from PDF...")
-    text = extract_text_from_pdf(file_path)
+    if file_path.endswith(".txt"):
+        logger.info("Reading plain text file...")
+        with open(file_path, "r", encoding="utf-8") as f:
+            text = f.read()
+    else:
+        from app.ingestion.parser import extract_text_from_pdf
+        logger.info("Extracting text from PDF...")
+        text = extract_text_from_pdf(file_path)
+
     if not text.strip():
         raise ValueError("Document contains no extractable text")
 
@@ -125,10 +131,16 @@ async def upload_document(
     except ValueError as e:
         # Expected validation errors (no text, no chunks)
         db.rollback()
+        if file_path.exists():
+            import os
+            os.remove(file_path)
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
         logger.error(f"Pipeline failed: {e}")
         db.rollback()
+        if file_path.exists():
+            import os
+            os.remove(file_path)
         raise HTTPException(status_code=500, detail=f"Ingestion pipeline error: {e}")
 
     # ── Commit only after successful indexing ────────────────────────────────
@@ -136,8 +148,13 @@ async def upload_document(
     db.refresh(document)
     logger.info("Ingestion complete.")
 
+    # 🆕 Meta-RAG: Run Reliability Audit in the background (post-indexing)
+    from app.ingestion.audit import run_document_audit
+    await run_document_audit(db, document)
+
     return {
         "document_id": document.document_id,
-        "message": "Document uploaded and indexed successfully",
+        "message": "Document uploaded, indexed, and audited successfully",
         "chunks_created": chunks_created,
+        "audit_results": document.audit_results
     }
