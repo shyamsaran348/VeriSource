@@ -61,17 +61,18 @@ VeriSource AI was built from the ground up over 8 distinct, rigorously tested ph
 
 | Phase | Identifier | Component Focus | Status |
 |:---:|---|---|:---:|
-| **0** | **Foundation** | Initializing FastAPI, configuring Supabase PostgreSQL, and defining Pydantic schemas. | ✅ Done |
-| **1** | **Auth & RBAC** | Implementing JSON Web Tokens (JWT) + bcrypt. Creating strict `Student` (Query) and `Admin` (Upload) role barriers. | ✅ Done |
-| **2** | **Ingestion Pipe**| Writing the PDF-to-Text extraction parsers, generating SHA-256 cryptographic file hashes, and establishing Document Versioning states. | ✅ Done |
-| **3** | **Vector Core** | Implementing ChromaDB. Replacing heavyweight PyTorch dependencies with the lightweight `fastembed` ONNX Runtime to resolve native Apple Silicon mutex deadlocks. | ✅ Done |
-| **4** | **Retrieval** | Enforcing Single-Document boundaries, metadata extraction, mode-matching, and chunk distance similarity checks. | ✅ Done |
-| **5** | **LLM Synthesis**| Integrating the `Groq` API (`llama-3.1-8b-instant`). Engineering the strict "Synthesis-Only" prompt templates that remove external knowledge dependencies. | ✅ Done |
-| **6** | **Decision Engine**| Calibrating the mathematical thresholds. Implementing the Variance-based Conflict Detector. | ✅ Done |
-| **7** | **Audit DB** | Creating the `audit_logs` SQL table. Recording every interaction, timestamp, confidence score, and LLM string sequence. | ✅ Done |
-| **8** | **UX & Robustness**| Hardening the Audit Dashboard with CSV exports and primary UI polish. | ✅ Done |
-| **9** | **Refusal XAI** | **Counterfactual Refusal Layer.** Providing "Why Not" guidance for unverified queries. | ✅ Done |
-| **10**| **Reliability Core**| **Reliability & Calibration Dashboard.** Empirical trust scoring based on audit history. | ✅ Done |
+| **0** | **Foundation** | Initializing FastAPI, SQLite/Postgres schemas, and Pydantic validation. | ✅ Done |
+| **1** | **Auth & RBAC** | Implementing JWT + bcrypt. Strict Student vs Admin role barriers. | ✅ Done |
+| **2** | **Ingestion Pipe**| PDF/TXT parsers with SHA-256 cryptographic integrity verification. | ✅ Done |
+| **3** | **Vector Core** | ChromaDB + ONNX Runtime (fastembed) to solve M-series mutex contention. | ✅ Done |
+| **4** | **Retrieval** | Single-Document isolation and mode-matching similarity checks. | ✅ Done |
+| **5** | **LLM Synthesis**| Groq (Llama-3.1) integration with strict 'Evidence-Only' prompt engineering. | ✅ Done |
+| **6** | **Decision Engine**| Calibrated signal-to-noise gating and contention detection logic. | ✅ Done |
+| **7** | **Audit DB** | Non-repudiable transaction logging with SHA-256 query hashing. | ✅ Done |
+| **8** | **UX Console** | Glassmorphic, military-grade terminal UI for student/admin portals. | ✅ Done |
+| **9** | **Refusal XAI** | Counterfactual explanations providing "Why Not" guidance for refused queries. | ✅ Done |
+| **10**| **Reliability Core**| Real-time trust score calibration for human-readable confidence metrics. | ✅ Done |
+| **11**| **Meta-RAG Audit** | **Autonomous Reliability QA.** AI-led stress testing of ingested documents. | ✅ Done |
 
 ---
 
@@ -133,6 +134,22 @@ The UI is designed to look like a secure, high-stakes military or financial term
 - **Verification Console:** Dual-pane interface with immediate Post-Mortem visual feedback.
 - **Evidence Reference Panel:** Side-by-side rendering of the exact text chunks with precise similarity percentages.
 - **Traceability Metadata**: Every result now includes a **Cryptographic Transaction ID** and human-readable time-indexing for absolute evidence provenance.
+
+---
+
+## 🛡️ Deep-Dive: Meta-RAG Quality Assurance (Phase 11)
+
+VeriSource AI introduces an industry-first **Autonomous Reliability Audit** layer. Before any document is approved for student use, it undergoes a "Self-Verification Loop."
+
+### How It Works
+1. **Probe Generation**: The system uses a specialized LLM agent to analyze the document chunks and generate 3-5 technical "Stress Test" questions that *should* be answerable by the text.
+2. **Internal Retrieval Simulation**: The system performs its own query-decision loop on these probes, calculating retrieval density and confidence.
+3. **Institutional Reliability Report**: Administrators are presented with a color-coded scorecard:
+    *   **High Clarity (75%+)**: Document is ready for student interaction.
+    *   **Medium Clarity (40-75%)**: Document may have ambiguity; review suggested.
+    *   **Low Clarity (<40%)**: Document rejected for ingestion due to low semantic density.
+
+*This proactive QA ensures that the platform is not just a search tool, but a **validated knowledge authority.***
 
 ---
 
