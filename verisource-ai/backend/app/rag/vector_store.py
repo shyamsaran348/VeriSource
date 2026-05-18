@@ -2,7 +2,8 @@ import chromadb
 from pathlib import Path
 from fastapi import HTTPException
 
-VECTOR_PATH = Path("vector_store")
+BASE_DIR = Path(__file__).resolve().parent.parent.parent
+VECTOR_PATH = BASE_DIR / "vector_store"
 _client = None
 
 

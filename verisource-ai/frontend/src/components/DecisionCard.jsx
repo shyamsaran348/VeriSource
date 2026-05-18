@@ -2,10 +2,12 @@ import React from 'react';
 import { motion } from 'framer-motion';
 import { CheckCircle2, XCircle, Clock } from 'lucide-react';
 import ConfidenceMeter from './ConfidenceMeter';
+import TrustDiagnostics from './TrustDiagnostics';
 
 const DecisionCard = ({ response }) => {
     const isApproved = response.decision?.toLowerCase() === 'approved';
     const score = response.confidence_score || 0;
+    const explanation = response.explanation;
 
     return (
         <motion.div
@@ -52,14 +54,31 @@ const DecisionCard = ({ response }) => {
             </div>
 
             <div className="bg-brand-navy-light/50 rounded-xl p-5 border border-white/5 mb-6 relative z-10">
-                <h4 className="text-sm font-semibold text-gray-400 uppercase tracking-widest mb-3">System Conclusion</h4>
+                <h4 className="text-sm font-semibold text-gray-400 uppercase tracking-widest mb-3">
+                    {isApproved ? 'System Synthesis' : 'Root Cause Analysis'}
+                </h4>
                 <p className="text-white text-lg leading-relaxed">
-                    {isApproved ? response.answer : response.reason || 'This query failed to meet the necessary criteria for verification.'}
+                    {isApproved ? response.answer : response.reason}
                 </p>
+                
+                {!isApproved && explanation && (
+                    <div className="mt-4 pt-4 border-t border-white/5">
+                        <h5 className="text-[10px] font-bold text-gray-500 uppercase tracking-[0.2em] mb-3">Required Evidence for Approval:</h5>
+                        <ul className="space-y-2">
+                            {explanation.missing_evidence_requirements.map((item, idx) => (
+                                <li key={idx} className="flex items-start gap-2 text-sm text-gray-400 italic">
+                                    <span className="text-red-500 mt-1">•</span>
+                                    {item}
+                                </li>
+                            ))}
+                        </ul>
+                    </div>
+                )}
             </div>
 
             <div className="relative z-10">
                 <ConfidenceMeter score={score} threshold={response.mode === 'policy' ? 0.05 : 0.03} />
+                <TrustDiagnostics diagnostics={response.diagnostics} />
             </div>
         </motion.div>
     );

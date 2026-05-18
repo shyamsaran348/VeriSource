@@ -57,3 +57,4 @@ verisource-ai/backend/chroma_db/
 verisource-ai/backend/check_text.py
 verisource-ai/backend/inspect_text.py
 verisource-ai/backend/diagnose_research_paper.py.old
+vector_store/

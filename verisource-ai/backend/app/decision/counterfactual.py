@@ -34,6 +34,27 @@ CONCEPT_REQUIREMENTS = {
         "Eligibility criteria for entry-level enrollment",
         "Document requirements for seat allotment",
         "Selection process descriptions and cut-off mechanisms"
+    ],
+    # --- Research Specific Concepts ---
+    "methodology": [
+        "Description of experimental setup or theoretical framework",
+        "Specific algorithms, architectures, or mathematical formulations",
+        "Definition of variables, parameters, and control groups"
+    ],
+    "results": [
+        "Quantitative data tables, accuracy metrics, or performance benchmarks",
+        "Comparative analysis against state-of-the-art baselines",
+        "Statistical significance markers (p-values, confidence intervals)"
+    ],
+    "contribution": [
+        "Explicit statement of the study's novel contribution to the field",
+        "Discussion of research gaps addressed by the work",
+        "Potential implications or future research directions"
+    ],
+    "dataset": [
+        "Details on data sources, size, and preprocessing steps",
+        "Class distributions and labeling methodologies",
+        "Information on data availability and licensing"
     ]
 }
 
@@ -54,10 +75,17 @@ def generate_refusal_explanation(query: str, mode: str, reason: str) -> Dict:
             
     # 2. Add technical/governance requirements based on the reason
     if "conflict" in reason.lower():
-        missing_elements.insert(0, "A non-contradictory, singular resolution of policy clauses")
+        if mode == "policy":
+            missing_elements.insert(0, "A non-contradictory, singular resolution of policy clauses")
+        else:
+            missing_elements.insert(0, "A consistent experimental result or unified theoretical conclusion")
+            
     elif "similarity" in reason.lower() or "insufficient" in reason.lower():
         if not found_concepts:
-            missing_elements.append("A relevant section matching the specific subject of your query")
+            if mode == "policy":
+                missing_elements.append("A relevant section matching the specific subject of your query")
+            else:
+                missing_elements.append("A specific citation or paragraph discussing this research topic")
             
     # Deduplicate while preserving order
     unique_elements = []

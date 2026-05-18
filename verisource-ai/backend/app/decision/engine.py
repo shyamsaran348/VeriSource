@@ -11,7 +11,11 @@ def make_decision(
     query_str: str,
     similarities: List[float],
     conflict_flag: bool,
-    model_flag_insufficient: bool
+    model_flag_insufficient: bool,
+    bypass_governance: bool = False,
+    bypass_entropy: bool = False,
+    bypass_conflict: bool = False,
+    bypass_veto: bool = False
 ) -> Dict:
     """
     Central Governance Hub: Implements a multi-stage deterministic decision gate.
@@ -30,6 +34,16 @@ def make_decision(
         Dict containing decision, score, and grounded reasoning.
     """
 
+    # 0. Baseline Comparison Logic (Vanilla RAG Simulation)
+    if bypass_governance:
+        return {
+            "decision": "approved",
+            "confidence_score": 1.0,
+            "reason": "Governance Bypassed (Baseline Mode)",
+            "explanation": None,
+            "diagnostics": {"focus_score": 1.0, "consensus_score": 1.0}
+        }
+
     # 1. Edge Case: No evidence retrieved at all
     if not similarities:
         reason = "No retrievable evidence found in selected document."
@@ -37,7 +51,8 @@ def make_decision(
             "decision": "refused",
             "confidence_score": 0.0,
             "reason": reason,
-            "explanation": generate_refusal_explanation(query_str, mode, reason)
+            "explanation": generate_refusal_explanation(query_str, mode, reason),
+            "diagnostics": {"focus_score": 0.0, "consensus_score": 0.0}
         }
 
     # 2. Statistical Signal Filtering (Signal-to-Noise Gating)
@@ -48,25 +63,50 @@ def make_decision(
 
     # 3. Calculate Core Confidence
     # This involves statistical variance check and model signal processing.
-    raw_confidence = compute_confidence(
-        similarities=similarities,
-        conflict_flag=conflict_flag,
-        model_flag_insufficient=model_flag_insufficient,
-        mode=mode
-    )
+    try:
+        raw_confidence, diagnostics = compute_confidence(
+            similarities=similarities,
+            conflict_flag=conflict_flag if not bypass_conflict else False,
+            model_flag_insufficient=model_flag_insufficient if not bypass_veto else False,
+            mode=mode,
+            bypass_entropy=bypass_entropy
+        )
+    except Exception as e:
+        # 🛡️ ARCHITECTURAL SELF-HEALING
+        # If ML engine fails, fail SAFE (Refusal)
+        print(f"[CRITICAL] ML Engine Error: {e}")
+        return {
+            "decision": "refused",
+            "confidence_score": 0.0,
+            "reason": "Internal Governance Error: Uncertainty too high to proceed.",
+            "explanation": {"missing_evidence_requirements": ["System stability check (ML Executor failed)"]},
+            "diagnostics": {"focus_score": 0.0, "consensus_score": 0.0}
+        }
 
     # 4. Mode-Aware Gating Logic
     
     # ── POLICY MODE (STRICT) ──────────────────────────────────────────────────
     if mode == "policy":
-        # Strict Conflict Check: Evidence must be harmonious
-        if conflict_flag:
+        # Stage 2 Check: Did the LLM flag missing evidence?
+        if model_flag_insufficient and not bypass_veto:
             reason = get_refusal_reason(mode, avg_positive_sim, conflict_flag, model_flag_insufficient)
             return {
                 "decision": "refused",
                 "confidence_score": round(raw_confidence, 4),
                 "reason": reason,
-                "explanation": generate_refusal_explanation(query_str, mode, reason)
+                "explanation": generate_refusal_explanation(query_str, mode, reason),
+                "diagnostics": diagnostics
+            }
+
+        # Strict Conflict Check: Evidence must be harmonious
+        if conflict_flag and not bypass_conflict:
+            reason = get_refusal_reason(mode, avg_positive_sim, conflict_flag, model_flag_insufficient)
+            return {
+                "decision": "refused",
+                "confidence_score": round(raw_confidence, 4),
+                "reason": reason,
+                "explanation": generate_refusal_explanation(query_str, mode, reason),
+                "diagnostics": diagnostics
             }
 
         # Strict Signal Gate: Must meet minimum precision threshold
@@ -76,14 +116,16 @@ def make_decision(
                 "decision": "refused",
                 "confidence_score": round(raw_confidence, 4),
                 "reason": reason,
-                "explanation": generate_refusal_explanation(query_str, mode, reason)
+                "explanation": generate_refusal_explanation(query_str, mode, reason),
+                "diagnostics": diagnostics
             }
 
         return {
             "decision": "approved",
             "confidence_score": scale_confidence_for_ui(raw_confidence),
             "reason": "Evidence sufficiently supports answer.",
-            "explanation": None
+            "explanation": None,
+            "diagnostics": diagnostics
         }
 
     # ── RESEARCH MODE (TOLERANT) ──────────────────────────────────────────────
@@ -95,14 +137,16 @@ def make_decision(
                 "decision": "refused",
                 "confidence_score": round(raw_confidence, 4),
                 "reason": reason,
-                "explanation": generate_refusal_explanation(query_str, mode, reason)
+                "explanation": generate_refusal_explanation(query_str, mode, reason),
+                "diagnostics": diagnostics
             }
 
         return {
             "decision": "approved",
             "confidence_score": scale_confidence_for_ui(raw_confidence),
             "reason": "Evidence supports answer (research tolerance applied).",
-            "explanation": None
+            "explanation": None,
+            "diagnostics": diagnostics
         }
 
     # Fallback safety (Default to Refusal)
@@ -111,5 +155,6 @@ def make_decision(
         "decision": "refused",
         "confidence_score": round(raw_confidence, 4),
         "reason": reason,
-        "explanation": generate_refusal_explanation(query_str, mode, reason)
+        "explanation": generate_refusal_explanation(query_str, mode, reason),
+        "diagnostics": diagnostics
     }

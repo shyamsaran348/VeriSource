@@ -15,12 +15,12 @@ def get_refusal_reason(
 
     if mode == "policy":
         if conflict_flag:
-            return "Conflicting sections detected in policy document."
-        if avg_similarity < 0.05:  # Calibrated 2026-02-21: fastembed MiniLM ONNX, 20+20 query experiment
-            return "Insufficient supporting evidence in selected policy document."
+            return "Conflicting sections detected in policy document. Institutional governance requires a singular resolution."
+        if avg_similarity < 0.05:  
+            return "Insufficient supporting evidence in selected policy document. The query may fall outside official institutional scope."
 
     elif mode == "research":
-        if avg_similarity < 0.03:  # Calibrated 2026-02-21: fastembed MiniLM ONNX, 20+20 query experiment
-            return "Insufficient supporting evidence in selected research paper."
+        if avg_similarity < 0.03:  
+            return "Insufficient supporting evidence in selected research paper. The query may involve variables not covered in this study's methodology."
 
     return "Confidence threshold not satisfied."
